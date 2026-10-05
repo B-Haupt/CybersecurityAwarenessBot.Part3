@@ -12,7 +12,7 @@ namespace CybersecurityAwarenessBot.Bot
         /// <summary>
         /// Stating the path to get greeting Bot file
         /// </summary>
-        private const string GreetingPathway = @"Media\Bot.wav";
+        private static readonly string GreetingPathway = Path.Combine(AppContext.BaseDirectory, "Media", "Bot.wav");
 
         /// <summary>
         /// This method plays the voice greeting. It is written so that if the audio file is missing or can't play, that a warning message will be shown instead of the
@@ -35,7 +35,7 @@ namespace CybersecurityAwarenessBot.Bot
                 // Creating a SoundPlayer Object to play the WAV file and "using" disposes the player automatically when the method ends
                 using var player = new SoundPlayer(GreetingPathway);
                 player.Load();
-                // Ensure message and logo doesn't appear until the greeting is finished.
+                // PlaySync waits for the audio to finish. The window runs this on a background thread so it doesn't freeze.
                 player.PlaySync();
                 return null;
 

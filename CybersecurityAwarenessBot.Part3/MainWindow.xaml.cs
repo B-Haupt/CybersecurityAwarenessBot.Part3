@@ -23,11 +23,12 @@ namespace CybersecurityAwarenessBot.Part3
         private bool _awaitingName = true;
 
         /// <summary>
-        /// Sets up the window and its controls
+        /// Sets up the window and its controls, and display the ASCII art logo
         /// </summary>
         public MainWindow()
         {
             InitializeComponent();
+            AsciiHeader.Text = _logo.GetLogo();
         }
 
         /// <summary>
@@ -75,27 +76,28 @@ namespace CybersecurityAwarenessBot.Part3
         }
 
         /// <summary>
-        /// Runs when the window opens. Displays the logo, plays the greeting and then asks the user for their name.
+        /// Runs once the window has been drawn. Plays the voice greeting on a background thread so the window stays responsive, then asks the user for their name.
+        /// Input is disabled until the greeting finishes so the text greeting still follows the voice greeting.
         /// </summary>
         /// <param name="sender">The window raising the event.</param>
         /// <param name="e">Event data</param>
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_ContentRendered(object? sender, EventArgs e)
         {
-            // Store the art in the header
-            AsciiHeader.Text = _logo.GetLogo();
+            InputBox.IsEnabled = false;
+            SendButton.IsEnabled = false;
 
-            // Play the voice greeting and report it in the chat if it doesn't play
-            string? error = _greeting.PlayGreeting();
+            // Task.Run moves the greeting off the UI thread, and await waits for it to finish without freezing the window
+            string? error = await Task.Run(() => _greeting.PlayGreeting());
             if (error != null)
             {
                 AddMessage("Bot", error, false);
             }
 
+            InputBox.IsEnabled = true;
+            SendButton.IsEnabled = true;
 
             AddMessage("Bot", "Hello! Welcome to the Cybersecurity Awareness Bot. What is your name?", false);
-
             InputBox.Focus();
-
         }
 
 
@@ -128,13 +130,16 @@ namespace CybersecurityAwarenessBot.Part3
         /// </summary>
         private void SendMessage()
         {
-
             string userInput = InputBox.Text;
 
             // Checks if input is blank and gives a reply that the user hasn't typed anything in
             if (!_validator.IsValidInput(userInput))
             {
-                AddMessage("Bot", "You haven't typed anything yet. Ask me about passwords, phishing or safe browsing, or say 'tell me more' to continue the last topic.", false);
+                string prompt = _awaitingName
+                    ? "You haven't typed anything yet. Please tell me your name so I can personalise our chat."
+                    : "You haven't typed anything yet. Ask me about passwords, phishing or safe browsing, or say 'tell me more' to continue the last topic.";
+
+                AddMessage("Bot", prompt, false);
                 InputBox.Clear();
                 InputBox.Focus();
                 return;
@@ -142,16 +147,24 @@ namespace CybersecurityAwarenessBot.Part3
 
             if (_awaitingName)
             {
-                _bot.User.Name = _validator.CleanName(userInput);
-                _awaitingName = false;
+                string name = _validator.CleanName(userInput);
 
                 AddMessage("You", userInput, true);
-
-                AddMessage("Bot", $"Welcome, {_bot.User.Name}! I'm a Cybersecurity Awareness Bot. You can ask me about password safety, phishing, safe browsing, "
-                    + "public wifi, privacy, online scams, links in emails and app permissions. You can also say 'tell me more' for another tip on the same topic.", false);
-
                 InputBox.Clear();
                 InputBox.Focus();
+
+                // Ask again if nothing usable was left, e.g. the user typed only "my name is"
+                if (name.Length == 0)
+                {
+                    AddMessage("Bot", "Sorry, I didn't catch your name. What should I call you?", false);
+                    return;
+                }
+
+                _bot.User.Name = name;
+                _awaitingName = false;
+
+                AddMessage("Bot", $"Welcome, {name}! I'm a Cybersecurity Awareness Bot. You can ask me about {_bot.TopicList}. "
+                    + "You can also say 'tell me more' for another tip on the same topic.", false);
                 return;
             }
 
