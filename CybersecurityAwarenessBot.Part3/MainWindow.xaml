@@ -1,0 +1,58 @@
+﻿<Window x:Class="CybersecurityAwarenessBot.Part3.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CybersecurityAwarenessBot.Part3"
+        mc:Ignorable="d"
+        Title="Cybersecurity Awareness Bot"
+        Height="720" Width="900"
+        MinHeight="560" MinWidth="700"
+        Background="{StaticResource BgDark}"
+        Loaded="Window_Loaded">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Row 0: ASCII art header -->
+        <Border Grid.Row="0" Background="{StaticResource BgPanel}"
+            CornerRadius="10" Padding="10" Margin="0,0,0,10">
+            <TextBlock x:Name="AsciiHeader"
+                   FontFamily="Consolas" FontSize="12"
+                   Foreground="{StaticResource AccentGreen}"
+                   HorizontalAlignment="Center"/>
+        </Border>
+
+        <!-- Row 1: chat history -->
+        <Border Grid.Row="1" Background="{StaticResource BgPanel}"
+            CornerRadius="10" Padding="8">
+            <ScrollViewer x:Name="ChatScroll" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ChatPanel" Margin="4"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Row 2: input -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="InputBox" Grid.Column="0"
+                 FontSize="14" Padding="10"
+                 BorderThickness="0"
+                 Background="{StaticResource BgPanel}"
+                 Foreground="{StaticResource TextLight}"
+                 CaretBrush="{StaticResource AccentGreen}"
+                 KeyDown="InputBox_KeyDown"/>
+
+            <Button x:Name="SendButton" Grid.Column="1" Content="Send"
+                Margin="10,0,0,0" 
+                Style="{StaticResource SendButtonStyle}"
+                Click="SendButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>
