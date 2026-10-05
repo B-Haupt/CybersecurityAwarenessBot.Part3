@@ -9,13 +9,30 @@ namespace CybersecurityAwarenessBot.Bot
     internal class BotResponses
     {
         /// <summary>
-        /// General questions about the chatbot itself. Kept separate from the cybersecurity topics so they never become the "current topic" that follow-up questions continue.
+        /// The topics the chatbot can talk about, written once so every message that lists them stays the same.
+        /// </summary>
+        public const string TopicList = "password safety, phishing, safe browsing, public Wi-Fi, online scams, links in emails, app permissions and privacy";
+
+        /// <summary>
+        /// General questions about the chatbot itself and everyday small talk. Kept separate from the cybersecurity topics so they never become the "current topic"
+        /// that follow-up questions continue. They are only checked when no cybersecurity topic is found, and are matched as whole words so "hi" doesn't match inside "this".
         /// </summary>
         private readonly Dictionary<string, string> _general = new()
         {
-            ["how are you"] = "I am good. Thank you for asking.",
+            ["how are you"] = "I am good. Thank you for asking. What would you like to learn about today?",
             ["your purpose"] = "My purpose is to provide you with safety tips to help you navigate the dangers online.",
-            ["what can i ask"] = "You can ask me about password, phishing and browsing. I can also offer tips about public wifi, online scams, privacy, links in emails and app permissions." 
+            ["what do you do"] = "I share practical tips to help you stay safe online, and you can ask me follow-up questions about any topic.",
+            ["who are you"] = "I'm the Cybersecurity Awareness Bot. I'm here to help you stay safe online.",
+            ["what can i ask"] = "You can ask me about " + TopicList + ". You can also say 'tell me more' for another tip on the same topic.",
+            ["thank you"] = "You're welcome! Let me know if there's anything else you'd like to know about staying safe online.",
+            ["thanks"] = "You're welcome! Let me know if there's anything else you'd like to know about staying safe online.",
+            ["hello"] = "Hello again! What would you like to learn about today?",
+            ["hi"] = "Hello again! What would you like to learn about today?",
+            ["hey"] = "Hello again! What would you like to learn about today?",
+            ["got it"] = "Great! Say 'tell me more' for another tip, or ask me about a new topic.",
+            ["okay"] = "Great! Say 'tell me more' for another tip, or ask me about a new topic.",
+            ["ok"] = "Great! Say 'tell me more' for another tip, or ask me about a new topic.",
+            ["cool"] = "Great! Say 'tell me more' for another tip, or ask me about a new topic."
         };
         /// <summary>
         /// The dictionary maps each keyword to a list of responses. The keys are stored in lower case because the input is normalised before matching. Storing several
@@ -86,9 +103,7 @@ namespace CybersecurityAwarenessBot.Bot
         /// <summary>
         /// Created a default response in case the user's input has no match. It also tells the user what topics are available to ask the chatbot.
         /// </summary>
-        private readonly string _defaultResponse = "I didn't quite understand. Could you please rephrase the question?"
-            + "\nYou can ask me about password safety, phishing or safe browsing. I can also offer tips about public Wifi, privacy, online scams, links in emails and app permissions.";
-
+        private readonly string _defaultResponse = "I didn't quite understand. Could you please rephrase the question?\nYou can ask me about " + TopicList + ".";
 
         /// <summary>
         /// This is used to pick a random tip from a topic's list. Declared once as a field rather than creating it inside the method as creating several Random
@@ -133,6 +148,30 @@ namespace CybersecurityAwarenessBot.Bot
         };
 
         /// <summary>
+        /// Other words people use for each topic. Maps the alternative word to the topic key, so for example "scammed" is treated as a scam question
+        /// and "2FA" as a password question.
+        /// </summary>
+        private readonly Dictionary<string, string> _aliases = new()
+        {
+            ["scammer"] = "scam",
+            ["scammed"] = "scam",
+            ["fraud"] = "scam",
+            ["fraudster"] = "scam",
+            ["phish"] = "phishing",
+            ["phished"] = "phishing",
+            ["phishy"] = "phishing",
+            ["2fa"] = "password",
+            ["mfa"] = "password",
+            ["passcode"] = "password",
+            ["browse"] = "browsing",
+            ["browser"] = "browsing",
+            ["hotspot"] = "wifi",
+            ["url"] = "link",
+            ["private"] = "privacy"
+        };
+
+
+        /// <summary>
         /// Converts a topic key into its readable name.
         /// </summary>
         /// <param name="key">The topic keyword.</param>
@@ -151,73 +190,79 @@ namespace CybersecurityAwarenessBot.Bot
         }
 
         /// <summary>
-        /// Searches the dictionary for the first keyword contained in the user's input and returns one of that topic's tips.
+        /// Then general questions and small talk, matched as whole words or phrases
         /// </summary>
         /// <param name="input">This is the user's message, which is already trimmed and converted to lower case by the InputValidator.</param>
-        /// <returns> 
-        /// A tip for the first matching keyword, chosen at random from the tips not yet shown for that topic. Once all of a topic's tips have been used the cycle
-        /// restarts and a short message is added to say so. If no keyword matches, the default response is returned.
-        /// </returns>
+        /// <returns>A tip for the matching topic, the answer to a general question, or the default response if nothing matches.</returns>
         public string GetResponseMatch(string input)
         {
-            // Check for general questions first
+            // Cybersecurity topics come first, so "how are you meant to make a strong password?" gets a password tip
+            string? topic = FindTopic(input);
+            if (topic != null)
+            {
+                return GetTip(topic);
+            }
+
+            // Then general questions about the chatbot
             foreach (var item in _general)
             {
-                if (input.Contains(item.Key))
+                if (Regex.IsMatch(input, $@"\b{Regex.Escape(item.Key)}\b"))
                 {
                     return item.Value;
                 }
             }
 
-            // Check each keyword in turn and return as soon as one is found 
-            foreach (var item in _responses)
-            {
-                if (Regex.IsMatch(input, $@"\b{Regex.Escape(item.Key)}s?\b"))
-                {
-                    List<string> options = item.Value;
-
-                    // Only one option, so there is nothing to vary
-                    if (options.Count == 1)
-                    {
-                        return options[0];
-                    }
-
-                    // First time a topic is asked about, this creates an empty record of which of its tips have been shown.
-                    if (!_shown.ContainsKey(item.Key))
-                    {
-                        _shown[item.Key] = new List<int>();
-                    }
-
-                    List<int> used = _shown[item.Key];
-                    string prefix = "";
-
-                    // All tips have been shown for the topic, so record is cleared and the cycle starts again, letting the user know the tips are repeating
-                    if (used.Count >= options.Count)
-                    {
-                        used.Clear();
-                        prefix = "I've shared all my tips on that, here they are again:\n\n";
-                    }
-
-                    // Build a list of the tips not yet shown, then pick randomly from those
-                    List<int> remaining = new();
-                    for (int i = 0; i < options.Count; i++)
-                    {
-                        if (!used.Contains(i))
-                        {
-                            remaining.Add(i);
-                        }
-                    }
-
-                    // Picking from the tips not shown
-                    int index = remaining[_random.Next(remaining.Count)];
-                    used.Add(index);
-
-                    return prefix + options[index];
-
-                }
-            }
             // if nothing is found then it returns the default response
             return _defaultResponse;
+        }
+
+        /// <summary>
+        /// Returns one of a topic's tips, chosen at random from the tips not yet shown. Once all of a topic's tips have been used the cycle restarts
+        /// and a short message is added to say so.
+        /// </summary>
+        /// <param name="topic">The topic keyword, as returned by FindTopic.</param>
+        /// <returns>A tip for the topic.</returns>
+        public string GetTip(string topic)
+        {
+            List<string> options = _responses[topic];
+
+            // Only one option, so there is nothing to vary
+            if (options.Count == 1)
+            {
+                return options[0];
+            }
+
+            // First time a topic is asked about, this creates an empty record of which of its tips have been shown.
+            if (!_shown.ContainsKey(topic))
+            {
+                _shown[topic] = new List<int>();
+            }
+
+            List<int> used = _shown[topic];
+            string prefix = "";
+
+            // All tips have been shown for the topic, so record is cleared and the cycle starts again, letting the user know the tips are repeating
+            if (used.Count >= options.Count)
+            {
+                used.Clear();
+                prefix = "I've shared all my tips on that, so here's one again:\n\n";
+            }
+
+            // Build a list of the tips not yet shown, then pick randomly from those
+            List<int> remaining = new();
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (!used.Contains(i))
+                {
+                    remaining.Add(i);
+                }
+            }
+
+            // Picking from the tips not shown
+            int index = remaining[_random.Next(remaining.Count)];
+            used.Add(index);
+
+            return prefix + options[index];
         }
 
         /// <summary>
@@ -229,13 +274,32 @@ namespace CybersecurityAwarenessBot.Bot
         public string? FindTopic(string input) {
             foreach (var item in _responses)
             {
-                if (Regex.IsMatch(input, $@"\b{Regex.Escape(item.Key)}s?\b"))
+                if (ContainsWord(input, item.Key))
                 {
                     return item.Key;
                 }
             }
+
+            foreach (var alias in _aliases)
+            {
+                if (ContainsWord(input, alias.Key))
+                {
+                    return alias.Value;
+                }
+            }
             return null;
         }
+        /// <summary>
+        /// Checks whether a whole word, or its plural, appears in the input. The word boundaries stop "link" matching inside "linkedin".
+        /// </summary>
+        /// <param name="input">Normalized user input</param>
+        /// <param name="word">The keyword to look for</param>
+        /// <returns>True if the word is found</returns>
+        private static bool ContainsWord(string input, string word)
+        {
+            return Regex.IsMatch(input, $@"\b{Regex.Escape(word)}s?\b");
+        }
+
 
     }
 }
