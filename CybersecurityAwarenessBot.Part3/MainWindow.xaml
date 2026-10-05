@@ -6,18 +6,16 @@
         xmlns:local="clr-namespace:CybersecurityAwarenessBot.Part3"
         mc:Ignorable="d"
         Title="Cybersecurity Awareness Bot"
-        Height="720" Width="900"
-        MinHeight="560" MinWidth="700"
+        Height="760" Width="920"
+        MinHeight="600" MinWidth="720"
         Background="{StaticResource BgDark}"
-        Loaded="Window_Loaded">
+        ContentRendered="Window_ContentRendered">
     <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Row 0: ASCII art header -->
         <Border Grid.Row="0" Background="{StaticResource BgPanel}"
             CornerRadius="10" Padding="10" Margin="0,0,0,10">
             <TextBlock x:Name="AsciiHeader"
@@ -26,33 +24,68 @@
                    HorizontalAlignment="Center"/>
         </Border>
 
-        <!-- Row 1: chat history -->
-        <Border Grid.Row="1" Background="{StaticResource BgPanel}"
-            CornerRadius="10" Padding="8">
-            <ScrollViewer x:Name="ChatScroll" VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="ChatPanel" Margin="4"/>
-            </ScrollViewer>
-        </Border>
+        <TabControl x:Name="MainTabs" Grid.Row="1">
 
-        <!-- Row 2: input -->
-        <Grid Grid.Row="2" Margin="0,10,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+            <!-- Chat tab: the chatbot from Parts 1 and 2 -->
+            <TabItem x:Name="ChatTab" Header="Chat">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-            <TextBox x:Name="InputBox" Grid.Column="0"
-                 FontSize="14" Padding="10"
-                 BorderThickness="0"
-                 Background="{StaticResource BgPanel}"
-                 Foreground="{StaticResource TextLight}"
-                 CaretBrush="{StaticResource AccentGreen}"
-                 KeyDown="InputBox_KeyDown"/>
+                    <!-- Chat history -->
+                    <Border Grid.Row="0" Background="{StaticResource BgPanel}"
+                        CornerRadius="10" Padding="8">
+                        <ScrollViewer x:Name="ChatScroll" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="ChatPanel" Margin="4"/>
+                        </ScrollViewer>
+                    </Border>
 
-            <Button x:Name="SendButton" Grid.Column="1" Content="Send"
-                Margin="10,0,0,0" 
-                Style="{StaticResource SendButtonStyle}"
-                Click="SendButton_Click"/>
-        </Grid>
+                    <!-- Input row -->
+                    <Grid Grid.Row="1" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="InputBox" Grid.Column="0"
+                             FontSize="14" Padding="10"
+                             BorderThickness="0"
+                             Background="{StaticResource BgPanel}"
+                             Foreground="{StaticResource TextLight}"
+                             CaretBrush="{StaticResource AccentGreen}"
+                             KeyDown="InputBox_KeyDown"/>
+
+                        <Button x:Name="SendButton" Grid.Column="1" Content="Send"
+                            Margin="10,0,0,0"
+                            Style="{StaticResource SendButtonStyle}"
+                            Click="SendButton_Click"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem x:Name="TasksTab" Header="Tasks">
+                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
+                    <TextBlock Text="..."
+                           Style="{StaticResource PlaceholderText}"/>
+                </Border>
+            </TabItem>
+
+            <TabItem x:Name="QuizTab" Header="Quiz">
+                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
+                    <TextBlock Text="..."
+                           Style="{StaticResource PlaceholderText}"/>
+                </Border>
+            </TabItem>
+
+            <TabItem x:Name="LogTab" Header="Activity Log">
+                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
+                    <TextBlock Text="..."
+                           Style="{StaticResource PlaceholderText}"/>
+                </Border>
+            </TabItem>
+
+        </TabControl>
     </Grid>
 </Window>
