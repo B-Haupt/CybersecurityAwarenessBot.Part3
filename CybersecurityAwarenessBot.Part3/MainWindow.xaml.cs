@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using CybersecurityAwarenessBot.Bot;
+using CybersecurityAwarenessBot.Features;
 
 namespace CybersecurityAwarenessBot.Part3
 {
@@ -15,8 +16,15 @@ namespace CybersecurityAwarenessBot.Part3
 
         private readonly GreetingPlayer _greeting = new();
         private readonly LogoArt _logo = new();
-        private readonly ChatBot _bot = new();
         private readonly InputValidator _validator = new();
+        private readonly ChatBot _bot;
+
+        /// <summary>
+        /// The activity log shared by every feature, so all actions appear in one place
+        /// </summary>
+        private readonly ActivityLog _log = new();
+
+
         /// <summary>
         /// True until the user has given their name. Set it so that while it is true, whatever the user types in is stored as their name instead of treated like a question.
         /// </summary>
@@ -28,6 +36,7 @@ namespace CybersecurityAwarenessBot.Part3
         public MainWindow()
         {
             InitializeComponent();
+            _bot = new ChatBot(_log);
             AsciiHeader.Text = _logo.GetLogo();
         }
 
