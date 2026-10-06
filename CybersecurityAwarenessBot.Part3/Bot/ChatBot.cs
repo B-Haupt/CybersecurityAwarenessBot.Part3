@@ -1,4 +1,6 @@
-﻿ 
+﻿using CybersecurityAwarenessBot.Features;
+
+
 namespace CybersecurityAwarenessBot.Bot
 {
     /// <summary>
@@ -12,6 +14,21 @@ namespace CybersecurityAwarenessBot.Bot
         private readonly SentimentAnalyser _sentiment = new();
 
         /// <summary>
+        /// The shared activity log. Passed in by the window so the chatbot, quiz and task assistant all record to the same log.
+        /// </summary>
+        private readonly ActivityLog _log;
+        
+        /// <summary>
+        /// How many log entries have been shown in the chat so far.
+        /// </summary>
+        private int _logShown;
+
+        /// <summary>
+        /// True if the last reply was the activity log, so "show more" means more of the log rather than another tip.
+        /// </summary>
+        private bool _lastReplyWasLog;
+
+        /// <summary>
         /// The user's details, it is public so that the window can read the name for message labels and set it when the user first enters it.
         /// </summary>
         public UserProfile User { get; } = new();
@@ -20,6 +37,21 @@ namespace CybersecurityAwarenessBot.Bot
         /// A readable list of every topic the chatbot can talk about, so messages stay in step with the responses.
         /// </summary>
         public string TopicList => BotResponses.TopicList;
+
+        /// <summary>
+        /// Phrases that ask to see the activity log
+        /// </summary>
+        private static readonly string[] LogPhrases = { "activity log", "what have you done", "show log", "show the log", "show me the log",
+            "recent actions", "show history" };
+
+        /// <summary>
+        /// Creates the chatbot with the activity log it should record its actions in.
+        /// </summary>
+        /// <param name="log">The shared activity log</param>
+        public ChatBot(ActivityLog log) 
+        {
+            _log = log;
+        }
 
         /// <summary>
         /// Keywords to end the conversation
@@ -63,6 +95,20 @@ namespace CybersecurityAwarenessBot.Bot
             // Increase question counter
             User.QuestionsAsked++;
 
+            // "show more" straight after the log means more of the log, not another tip
+            bool continuingLog = _lastReplyWasLog;
+            _lastReplyWasLog = false;
+            if (continuingLog && (input == "more" || input.Contains("show more")))
+            {
+                return ShowLog(fromStart: false);
+            }
+
+            // "Show activity log" or "What have you done for me?"
+            if (LogPhrases.Any(phrase => input.Contains(phrase)))
+            {
+                return ShowLog(fromStart: true);
+            }
+
             // Questions about what the chatbot remembers, e.g. "what is my favourite topic?"
             string? memoryAnswer = AnswerMemoryQuestion(input, matched);
             if (memoryAnswer != null)
@@ -89,14 +135,21 @@ namespace CybersecurityAwarenessBot.Bot
                     // A new favourite topic resets the recall so it is mentioned again the next time the user asks about something else
                     User.LastRecallAt = null;
 
+                    _log.Add($"Remembered favourite topic: {_botResponses.GetDisplayName(matched)}");
+
                     return $"Great, I'll remember that you're interested in {_botResponses.GetDisplayName(matched)}, {User.Name}. "
                         + $"It's an important part of staying safe online.\n\n{_botResponses.GetTip(matched)}";
                 }
             }
 
-            // Only updates when a topic is actually found
+            // Only updates when a topic is actually found. A new topic is logged as a keyword-detection action.
             if (matched != null)
             {
+                if (matched != User.CurrentTopic)
+                {
+                    _log.Add($"Recognised topic: {_botResponses.GetDisplayName(matched)}");
+                }
+
                 User.CurrentTopic = matched;
             }
 
@@ -186,6 +239,49 @@ namespace CybersecurityAwarenessBot.Bot
 
             summary += $" and you've asked me {User.QuestionsAsked} question(s) so far.";
             return summary;
+        }
+
+        /// <summary>
+        /// Lists the most recent actions from the activity log, newest first, one page at a time.
+        /// </summary>
+        /// <param name="fromStart">True to start from the newest action, false to carry on from where the last page ended</param>
+        /// <returns>A numbered list of actions, or a message if there is nothing (more) to show</returns>
+        private string ShowLog(bool fromStart)
+        {
+            if (fromStart)
+            {
+                _logShown = 0;
+            }
+
+            if (_log.Count == 0)
+            {
+                return $"I haven't done anything for you yet, {User.Name}. Try asking me about a topic, or try the quiz or task tabs.";
+            }
+
+            List<ActivityEntry> page = _log.GetPage(_logShown, ActivityLog.PageSize);
+
+            if (page.Count == 0)
+            {
+                return "That's everything in the log. Say 'show activity log' to see the most recent actions again.";
+            }
+
+            string text = fromStart ? "Here's a summary of my recent actions, newest first:" : "Here are some earlier actions:";
+
+            for (int i = 0; i < page.Count; i++)
+            {
+                text += $"\n{_logShown + i + 1}. {page[i]}";
+            }
+
+            _logShown += page.Count;
+            _lastReplyWasLog = true;
+
+            // Only offer more if there is more
+            if (_logShown < _log.Count)
+            {
+                text += "\n\nSay 'show more' to see earlier actions.";
+            }
+
+            return text;
         }
 
         /// <summary>
