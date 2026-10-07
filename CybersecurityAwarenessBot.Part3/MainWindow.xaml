@@ -26,7 +26,6 @@
 
         <TabControl x:Name="MainTabs" Grid.Row="1">
 
-            <!-- Chat tab: the chatbot from Parts 1 and 2 -->
             <TabItem x:Name="ChatTab" Header="Chat">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -34,7 +33,6 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Chat history -->
                     <Border Grid.Row="0" Background="{StaticResource BgPanel}"
                         CornerRadius="10" Padding="8">
                         <ScrollViewer x:Name="ChatScroll" VerticalScrollBarVisibility="Auto">
@@ -42,7 +40,7 @@
                         </ScrollViewer>
                     </Border>
 
-                    <!-- Input row -->
+                   
                     <Grid Grid.Row="1" Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -67,22 +65,69 @@
 
             <TabItem x:Name="TasksTab" Header="Tasks">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
-                    <TextBlock Text="..."
+                    <TextBlock Text="Your cybersecurity tasks will appear here."
                            Style="{StaticResource PlaceholderText}"/>
                 </Border>
             </TabItem>
 
             <TabItem x:Name="QuizTab" Header="Quiz">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
-                    <TextBlock Text="..."
+                    <TextBlock Text="The cybersecurity quiz will appear here."
                            Style="{StaticResource PlaceholderText}"/>
                 </Border>
             </TabItem>
 
             <TabItem x:Name="LogTab" Header="Activity Log">
-                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
-                    <TextBlock Text="..."
-                           Style="{StaticResource PlaceholderText}"/>
+                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                            <TextBlock Text="Activity Log" Style="{StaticResource SectionTitle}"/>
+                            <TextBlock x:Name="LogSummary" Style="{StaticResource SubtleText}"/>
+                        </StackPanel>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="LogList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource BgDark}" CornerRadius="8"
+                                                Padding="12,8" Margin="0,0,6,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Time, StringFormat={}{0:HH:mm}}"
+                                                           FontFamily="Consolas" FontSize="13"
+                                                           Foreground="{StaticResource AccentGreen}"
+                                                           VerticalAlignment="Center" Margin="0,0,14,0"/>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Description}"
+                                                           FontSize="14" TextWrapping="Wrap"
+                                                           Foreground="{StaticResource TextLight}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        
+                        <TextBlock x:Name="LogEmpty" Grid.Row="1"
+                                   Text="Nothing has been logged yet. Chat with the bot, take the quiz or add a task, and the actions will appear here."
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Style="{StaticResource PlaceholderText}"/>
+
+                        <Button x:Name="ShowMoreButton" Grid.Row="2" Content="Show more"
+                                HorizontalAlignment="Center" Margin="0,12,0,0"
+                                Style="{StaticResource SendButtonStyle}"
+                                Click="ShowMoreButton_Click"/>
+                    </Grid>
                 </Border>
             </TabItem>
 
