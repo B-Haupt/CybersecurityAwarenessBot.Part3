@@ -1,9 +1,10 @@
-﻿using System.Windows;
+﻿using CybersecurityAwarenessBot.Bot;
+using CybersecurityAwarenessBot.Features;
+using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using CybersecurityAwarenessBot.Bot;
-using CybersecurityAwarenessBot.Features;
 
 namespace CybersecurityAwarenessBot.Part3
 {
@@ -31,6 +32,11 @@ namespace CybersecurityAwarenessBot.Part3
         private bool _awaitingName = true;
 
         /// <summary>
+        /// How many log entries the Activity Log tab is showing.
+        /// </summary>
+        private int _logTabShown = ActivityLog.PageSize;
+
+        /// <summary>
         /// Sets up the window and its controls, and display the ASCII art logo
         /// </summary>
         public MainWindow()
@@ -38,6 +44,9 @@ namespace CybersecurityAwarenessBot.Part3
             InitializeComponent();
             _bot = new ChatBot(_log);
             AsciiHeader.Text = _logo.GetLogo();
+            // Refresh the activity log tab whenever anything is logged
+            _log.EntryAdded += RefreshLogTab;
+            RefreshLogTab();
         }
 
         /// <summary>
@@ -184,6 +193,33 @@ namespace CybersecurityAwarenessBot.Part3
 
             InputBox.Clear();
             InputBox.Focus();
+        }
+
+        /// <summary>
+        /// Redraws the Activity Log tab with the most recent entries, newest first, and only shows "Show more" when there are older entries to show.
+        /// </summary>
+        private void RefreshLogTab()
+        {
+            LogList.ItemsSource = _log.GetPage(0, _logTabShown);
+
+            int showing = Math.Min(_logTabShown, _log.Count);
+            LogSummary.Text = _log.Count == 0
+                ? "The chatbot's actions will be recorded here."
+                : $"Showing the {showing} most recent of {_log.Count} actions, newest first.";
+
+            LogEmpty.Visibility = _log.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ShowMoreButton.Visibility = _log.Count > _logTabShown ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Shows the next page of older entries in the Activity Log tab.
+        /// </summary>
+        /// <param name="sender">The button raising the event.</param>
+        /// <param name="e">Event data</param>
+        private void ShowMoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            _logTabShown += ActivityLog.PageSize;
+            RefreshLogTab();
         }
     }
 }

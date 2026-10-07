@@ -4,14 +4,14 @@
              xmlns:local="clr-namespace:CybersecurityAwarenessBot.Part3"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        
+
         <SolidColorBrush x:Key="BgDark" Color="#0D1B2A" />
         <SolidColorBrush x:Key="BgPanel" Color="#1B263B" />
         <SolidColorBrush x:Key="AccentGreen" Color="#7CFFB2" />
         <SolidColorBrush x:Key="AccentHover" Color="#2E9E6B" />
         <SolidColorBrush x:Key="TextLight" Color="#E0E1DD" />
         <SolidColorBrush x:Key="TextWhite" Color="#FFFFFF" />
-        
+
         <!-- Button Style-->
         <Style x:Key="SendButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource AccentGreen}"/>
@@ -111,13 +111,26 @@
             </Setter>
         </Style>
 
-        <!-- Placeholder -->
         <Style x:Key="PlaceholderText" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextLight}"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="Opacity" Value="0.7"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AccentGreen}"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="SubtleText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextLight}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
     </Application.Resources>
 </Application>
