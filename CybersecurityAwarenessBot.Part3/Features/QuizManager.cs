@@ -28,11 +28,6 @@
                 new List<string> { "Password123", "brittany2005", "Sunny-Kettle-Orbit-42!", "qwerty" }, 2,
                 "A long passphrase of random words mixed with numbers and symbols is far harder to guess or crack than a short or personal password."),
 
-            new QuizQuestion("What is two-factor authentication (2FA)?",
-                new List<string> { "Making use of two different passwords", "Having a  second check, such as a code on your phone, as well as your password",
-                    "Logging in from two devices", "Changing your password twice a year" }, 1,
-                "2FA adds a second step to logging in, so even if someone steals your password they still cannot get into your account."),
-
             QuizQuestion.TrueFalse("Social engineering attacks breaks into computers directly via hacking.", false,
                 "Social engineers use urgency, fear or friendliness to trick people into giving away information or access, which is why pausing to verify is so important."),
 

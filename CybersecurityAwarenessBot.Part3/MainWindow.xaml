@@ -72,8 +72,57 @@
 
             <TabItem x:Name="QuizTab" Header="Quiz">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
-                    <TextBlock Text="The cybersecurity quiz will appear here."
-                           Style="{StaticResource PlaceholderText}"/>
+                    <Grid>
+                        <StackPanel x:Name="QuizStartPanel" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
+                            <TextBlock Text="Cybersecurity Quiz" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+                            <TextBlock Style="{StaticResource SubtleText}" TextAlignment="Center" Margin="0,4,0,20"
+                                       Text="Test what you know about phishing, passwords, safe browsing, social engineering and more. Questions are shown one at a time, with feedback after each answer."/>
+                            <Button x:Name="StartQuizButton" Content="Start quiz" HorizontalAlignment="Center"
+                                    Style="{StaticResource SendButtonStyle}" Click="StartQuizButton_Click"/>
+                        </StackPanel>
+
+                        <Grid x:Name="QuizQuestionPanel" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="0,0,0,12">
+                                <TextBlock x:Name="QuizProgress" Style="{StaticResource SubtleText}" HorizontalAlignment="Left"/>
+                                <TextBlock x:Name="QuizScore" Foreground="{StaticResource AccentGreen}" FontWeight="SemiBold"
+                                           FontSize="14" HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="0,0,6,0">
+                                    <TextBlock x:Name="QuestionText" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{StaticResource TextLight}" Margin="0,0,0,16"/>
+
+                                    <StackPanel x:Name="OptionsPanel"/>
+
+                                    <Border x:Name="FeedbackBorder" CornerRadius="8" Padding="14,10" Margin="0,8,0,0" Visibility="Collapsed">
+                                        <TextBlock x:Name="FeedbackText" TextWrapping="Wrap" FontSize="14"
+                                                   Foreground="{StaticResource BgDark}"/>
+                                    </Border>
+
+                                    <Button x:Name="NextButton" Content="Next question" HorizontalAlignment="Right" Margin="0,14,0,0"
+                                            Visibility="Collapsed" Style="{StaticResource SendButtonStyle}" Click="NextButton_Click"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+
+                        <StackPanel x:Name="QuizResultPanel" Visibility="Collapsed" VerticalAlignment="Center"
+                                    HorizontalAlignment="Center" MaxWidth="560">
+                            <TextBlock Text="Quiz complete!" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="FinalScoreText" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"
+                                       Foreground="{StaticResource TextLight}" Margin="0,8,0,8"/>
+                            <TextBlock x:Name="FinalFeedbackText" FontSize="16" TextWrapping="Wrap" TextAlignment="Center"
+                                       Foreground="{StaticResource AccentGreen}" Margin="0,0,0,20"/>
+                            <Button x:Name="PlayAgainButton" Content="Play again" HorizontalAlignment="Center"
+                                    Style="{StaticResource SendButtonStyle}" Click="StartQuizButton_Click"/>
+                        </StackPanel>
+
+                    </Grid>
                 </Border>
             </TabItem>
 
