@@ -1,6 +1,5 @@
 ﻿using CybersecurityAwarenessBot.Bot;
 using CybersecurityAwarenessBot.Features;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -19,6 +18,11 @@ namespace CybersecurityAwarenessBot.Part3
         private readonly LogoArt _logo = new();
         private readonly InputValidator _validator = new();
         private readonly ChatBot _bot;
+
+        /// <summary>
+        /// This runs the quiz. This shares the activity log, so the quiz starts and results appear in the log.
+        /// </summary>
+        private readonly QuizManager _quiz;
 
         /// <summary>
         /// The activity log shared by every feature, so all actions appear in one place
@@ -43,6 +47,7 @@ namespace CybersecurityAwarenessBot.Part3
         {
             InitializeComponent();
             _bot = new ChatBot(_log);
+            _quiz = new QuizManager(_log);
             AsciiHeader.Text = _logo.GetLogo();
             // Refresh the activity log tab whenever anything is logged
             _log.EntryAdded += RefreshLogTab;
@@ -220,6 +225,114 @@ namespace CybersecurityAwarenessBot.Part3
         {
             _logTabShown += ActivityLog.PageSize;
             RefreshLogTab();
+        }
+
+        /// <summary>
+        /// Starts a new quiz and shows the first question. Used by both the Start quiz and Play again buttons.
+        /// </summary>
+        /// <param name="sender">The button raising the event.</param>
+        /// <param name="e">Event data</param>
+        private void StartQuizButton_Click(object sender, RoutedEventArgs e)
+        {
+            _quiz.Start();
+
+            QuizStartPanel.Visibility = Visibility.Collapsed;
+            QuizResultPanel.Visibility = Visibility.Collapsed;
+            QuizQuestionPanel.Visibility = Visibility.Visible;
+
+            ShowQuestion();
+        }
+
+        /// <summary>
+        /// Displays the current question and creates one button per answer option. Two buttons for true/false, four for multiple choice.
+        /// </summary>
+        private void ShowQuestion()
+        {
+            QuizQuestion question = _quiz.CurrentQuestion;
+
+            string type = question.IsTrueFalse ? "True or false" : "Multiple choice";
+            QuizProgress.Text = $"Question {_quiz.QuestionNumber} of {_quiz.TotalQuestions}  |  {type}";
+            QuizScore.Text = $"Score: {_quiz.Score}";
+            QuestionText.Text = question.Prompt;
+
+            // Remove the previous question's buttons, then add one for each option
+            OptionsPanel.Children.Clear();
+            for (int i = 0; i < question.Options.Count; i++)
+            {
+                var button = new Button
+                {
+                    Content = new TextBlock { Text = question.GetOptionLabel(i), TextWrapping = TextWrapping.Wrap },
+                    Tag = i,
+                    Style = (Style)FindResource("QuizOptionStyle")
+                };
+                button.Click += OptionButton_Click;
+                OptionsPanel.Children.Add(button);
+            }
+
+            FeedbackBorder.Visibility = Visibility.Collapsed;
+            NextButton.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Checks the chosen answer, colours the correct option green and a wrong choice red, and shows the explanation.
+        /// </summary>
+        /// <param name="sender">The answer button that was clicked.</param>
+        /// <param name="e">Event data</param>
+        private void OptionButton_Click(object sender, RoutedEventArgs e)
+        {
+            var clicked = (Button)sender;
+            int choice = (int)clicked.Tag;
+
+            var (isCorrect, feedback) = _quiz.SubmitAnswer(choice);
+            int correct = _quiz.CurrentQuestion.CorrectIndex;
+
+            // Lock the answers and show which was right
+            foreach (Button button in OptionsPanel.Children)
+            {
+                button.IsEnabled = false;
+                int index = (int)button.Tag;
+
+                if (index == correct)
+                {
+                    button.Background = (Brush)FindResource("AccentGreen");
+                    button.Foreground = (Brush)FindResource("BgDark");
+                }
+                else if (index == choice)
+                {
+                    button.Background = (Brush)FindResource("AccentRed");
+                    button.Foreground = (Brush)FindResource("BgDark");
+                }
+            }
+
+            FeedbackText.Text = feedback;
+            FeedbackBorder.Background = (Brush)FindResource(isCorrect ? "AccentGreen" : "AccentRed");
+            FeedbackBorder.Visibility = Visibility.Visible;
+
+            QuizScore.Text = $"Score: {_quiz.Score}";
+
+            // On the last question the button leads to the results instead
+            NextButton.Content = _quiz.QuestionNumber == _quiz.TotalQuestions ? "See my results" : "Next question";
+            NextButton.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>
+        /// Moves to the next question, or shows the final score and feedback when the quiz is finished.
+        /// </summary>
+        /// <param name="sender">The button raising the event.</param>
+        /// <param name="e">Event data</param>
+        private void NextButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_quiz.NextQuestion())
+            {
+                ShowQuestion();
+                return;
+            }
+
+            QuizQuestionPanel.Visibility = Visibility.Collapsed;
+            QuizResultPanel.Visibility = Visibility.Visible;
+
+            FinalScoreText.Text = $"{_quiz.Score} / {_quiz.TotalQuestions}";
+            FinalFeedbackText.Text = _quiz.GetFinalFeedback();
         }
     }
 }
