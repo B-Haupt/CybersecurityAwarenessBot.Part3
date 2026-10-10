@@ -1,4 +1,3 @@
-cybersecurity_bottasksid
 CREATE DATABASE IF NOT EXISTS cybersecurity_bot;
 USE cybersecurity_bot;
 

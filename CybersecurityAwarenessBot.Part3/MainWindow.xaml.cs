@@ -1,5 +1,7 @@
 ﻿using CybersecurityAwarenessBot.Bot;
+using CybersecurityAwarenessBot.Database;
 using CybersecurityAwarenessBot.Features;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -121,6 +123,10 @@ namespace CybersecurityAwarenessBot.Part3
 
             AddMessage("Bot", "Hello! Welcome to the Cybersecurity Awareness Bot. What is your name?", false);
             InputBox.Focus();
+
+            // Check the task database in the background and report the result on the Tasks tab
+            string? databaseError = await DatabaseConnection.TestConnectionAsync();
+            TasksStatus.Text = databaseError ?? "Connected to the task database. Your tasks will appear here.";
         }
 
 
