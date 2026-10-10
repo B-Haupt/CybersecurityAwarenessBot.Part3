@@ -65,10 +65,11 @@
 
             <TabItem x:Name="TasksTab" Header="Tasks">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
-                    <TextBlock Text="Your cybersecurity tasks will appear here."
-                           Style="{StaticResource PlaceholderText}"/>
+                    <TextBlock x:Name="TasksStatus" Text="Checking the task database..." TextWrapping="Wrap" TextAlignment="Center"
+                    Style="{StaticResource PlaceholderText}"/>
                 </Border>
             </TabItem>
+            
 
             <TabItem x:Name="QuizTab" Header="Quiz">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
@@ -166,7 +167,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                        
+
                         <TextBlock x:Name="LogEmpty" Grid.Row="1"
                                    Text="Nothing has been logged yet. Chat with the bot, take the quiz or add a task, and the actions will appear here."
                                    TextWrapping="Wrap" TextAlignment="Center"
@@ -179,7 +180,6 @@
                     </Grid>
                 </Border>
             </TabItem>
-
         </TabControl>
     </Grid>
 </Window>
