@@ -1,11 +1,11 @@
 ﻿using CybersecurityAwarenessBot.Bot;
 using CybersecurityAwarenessBot.Database;
 using CybersecurityAwarenessBot.Features;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using MySqlConnector;
 
 namespace CybersecurityAwarenessBot.Part3
 {
@@ -25,6 +25,11 @@ namespace CybersecurityAwarenessBot.Part3
         /// This runs the quiz. This shares the activity log, so the quiz starts and results appear in the log.
         /// </summary>
         private readonly QuizManager _quiz;
+
+        /// <summary>
+        /// This saves and loads the user's tasks in MySQL.
+        /// </summary>
+        private readonly TaskRepository _tasks;
 
         /// <summary>
         /// The activity log shared by every feature, so all actions appear in one place
@@ -50,10 +55,13 @@ namespace CybersecurityAwarenessBot.Part3
             InitializeComponent();
             _bot = new ChatBot(_log);
             _quiz = new QuizManager(_log);
+            _tasks = new TaskRepository(_log);
             AsciiHeader.Text = _logo.GetLogo();
             // Refresh the activity log tab whenever anything is logged
             _log.EntryAdded += RefreshLogTab;
             RefreshLogTab();
+
+            ReminderPicker.DisplayDateStart = DateTime.Today;
         }
 
         /// <summary>
@@ -108,6 +116,7 @@ namespace CybersecurityAwarenessBot.Part3
         /// <param name="e">Event data</param>
         private async void Window_ContentRendered(object? sender, EventArgs e)
         {
+            Task tasksLoading = LoadTasksAsync();
             InputBox.IsEnabled = false;
             SendButton.IsEnabled = false;
 
@@ -124,9 +133,7 @@ namespace CybersecurityAwarenessBot.Part3
             AddMessage("Bot", "Hello! Welcome to the Cybersecurity Awareness Bot. What is your name?", false);
             InputBox.Focus();
 
-            // Check the task database in the background and report the result on the Tasks tab
-            string? databaseError = await DatabaseConnection.TestConnectionAsync();
-            TasksStatus.Text = databaseError ?? "Connected to the task database. Your tasks will appear here.";
+            await tasksLoading;
         }
 
 
@@ -339,6 +346,140 @@ namespace CybersecurityAwarenessBot.Part3
 
             FinalScoreText.Text = $"{_quiz.Score} / {_quiz.TotalQuestions}";
             FinalFeedbackText.Text = _quiz.GetFinalFeedback();
+        }
+
+        /// <summary>
+        /// Reads every task from the database and shows them in the Tasks tab, with a count of pending and completed tasks.
+        /// If the database can't be reached, the tab explains what to do instead of the program crashing.
+        /// </summary>
+        private async Task LoadTasksAsync()
+        {
+            try
+            {
+                List<TaskItem> tasks = await _tasks.GetAllAsync();
+                TaskList.ItemsSource = tasks;
+
+                int pending = tasks.Count(task => !task.IsCompleted);
+                TasksSummary.Text = tasks.Count == 0
+                    ? "Keep track of cybersecurity actions you want to take, with an optional reminder."
+                    : $"{pending} pending, {tasks.Count - pending} completed.";
+
+                TasksEmpty.Text = "No tasks yet. Add one above, for example 'Enable two-factor authentication'.";
+                TasksEmpty.Visibility = tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+            catch (MySqlException ex)
+            {
+                TaskList.ItemsSource = null;
+                TasksSummary.Text = "Your tasks couldn't be loaded.";
+                TasksEmpty.Text = DatabaseConnection.DescribeError(ex);
+                TasksEmpty.Visibility = Visibility.Visible;
+            }
+        }
+
+        /// <summary>
+        /// Saves a new task from the form, then clears the form and reloads the list.
+        /// </summary>
+        /// <param name="sender">The button raising the event.</param>
+        /// <param name="e">Event data</param>
+        private async void AddTaskButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Disabled while saving, so a double-click can't add the task twice
+            AddTaskButton.IsEnabled = false;
+
+            try
+            {
+                TaskItem task = await _tasks.AddAsync(TaskTitleBox.Text, TaskDescriptionBox.Text, ReminderPicker.SelectedDate);
+
+                TaskTitleBox.Clear();
+                TaskDescriptionBox.Clear();
+                ReminderPicker.SelectedDate = null;
+
+                string reminder = task.ReminderDate == null ? "" : $" I'll remind you on {task.ReminderDate:d MMM yyyy}.";
+                ShowTaskMessage($"Task added: '{task.Title}'.{reminder}", isError: false);
+
+                await LoadTasksAsync();
+            }
+            catch (ArgumentException ex)
+            {
+                // Validation problems
+                ShowTaskMessage(ex.Message, isError: true);
+            }
+            catch (MySqlException ex)
+            {
+                ShowTaskMessage(DatabaseConnection.DescribeError(ex), isError: true);
+            }
+            finally
+            {
+                AddTaskButton.IsEnabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Marks the clicked task as completed.
+        /// </summary>
+        /// <param name="sender">The task's Complete button, whose Tag holds the TaskItem.</param>
+        /// <param name="e">Event data</param>
+        private async void CompleteTask_Click(object sender, RoutedEventArgs e)
+        {
+            // The button's Tag holds the task for its row. "is not" checks it really is a TaskItem before using it.
+            if (((Button)sender).Tag is not TaskItem task)
+            {
+                return;
+            }
+            await RunTaskActionAsync(() => _tasks.MarkCompletedAsync(task), $"Well done! '{task.Title}' is marked as completed.");
+        }
+
+        /// <summary>
+        /// Deletes the clicked task, after asking the user to confirm.
+        /// </summary>
+        /// <param name="sender">The task's Delete button, whose Tag holds the TaskItem.</param>
+        /// <param name="e">Event data</param>
+        private async void DeleteTask_Click(object sender, RoutedEventArgs e)
+        {
+            // The button's Tag holds the task for its row. "is not" checks it really is a TaskItem before using it.
+            if (((Button)sender).Tag is not TaskItem task)
+            {
+                return;
+            }
+
+            MessageBoxResult answer = MessageBox.Show($"Delete the task '{task.Title}'?", "Delete task", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            await RunTaskActionAsync(() => _tasks.DeleteAsync(task), $"Deleted '{task.Title}'.");
+        }
+
+        /// <summary>
+        /// Runs a database action on one task, shows the result, and reloads the list. Used by both Complete and Delete so the error handling is written once.
+        /// </summary>
+        /// <param name="action">The action to run. It returns true if the task was found and changed.</param>
+        /// <param name="successMessage">The message to show if it worked</param>
+        private async Task RunTaskActionAsync(Func<Task<bool>> action, string successMessage)
+        {
+            try
+            {
+                bool changed = await action();
+                ShowTaskMessage(changed ? successMessage : "That task no longer exists, so the list has been refreshed.", isError: !changed);
+                await LoadTasksAsync();
+            }
+            catch (MySqlException ex)
+            {
+                ShowTaskMessage(DatabaseConnection.DescribeError(ex), isError: true);
+            }
+        }
+
+        /// <summary>
+        /// Shows a message beside the Add task button: green for success, red for a problem.
+        /// </summary>
+        /// <param name="message">The text to show</param>
+        /// <param name="isError">True for a problem, false for success</param>
+        private void ShowTaskMessage(string message, bool isError)
+        {
+            TaskMessage.Text = message;
+            TaskMessage.Foreground = (Brush)FindResource(isError ? "AccentRed" : "AccentGreen");
+            TaskMessage.Visibility = Visibility.Visible;
         }
     }
 }

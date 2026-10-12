@@ -63,13 +63,119 @@
                 </Grid>
             </TabItem>
 
+            <!-- Tasks tab: add cybersecurity tasks with an optional reminder, then complete or delete them. -->
             <TabItem x:Name="TasksTab" Header="Tasks">
-                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
-                    <TextBlock x:Name="TasksStatus" Text="Checking the task database..." TextWrapping="Wrap" TextAlignment="Center"
-                    Style="{StaticResource PlaceholderText}"/>
+                <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="16">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Text="Cybersecurity Tasks" Style="{StaticResource SectionTitle}"/>
+                            <TextBlock x:Name="TasksSummary" Text="Loading your tasks..." Style="{StaticResource SubtleText}"/>
+                        </StackPanel>
+
+                        <!-- Form for adding a task -->
+                        <Grid Grid.Row="1" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Title" Style="{StaticResource SubtleText}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="TaskTitleBox" Grid.Row="1" Grid.Column="0" MaxLength="100" Style="{StaticResource FormTextBox}"/>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Reminder date (optional)" Style="{StaticResource SubtleText}" Margin="12,0,0,4"/>
+                            <DatePicker x:Name="ReminderPicker" Grid.Row="1" Grid.Column="1" Width="190" Margin="12,0,0,0"
+                                        FontSize="14" VerticalContentAlignment="Center"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="Description (optional)" Style="{StaticResource SubtleText}" Margin="0,10,0,4"/>
+                            <TextBox x:Name="TaskDescriptionBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" MaxLength="500" Style="{StaticResource FormTextBox}"/>
+
+                            <Grid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="TaskMessage" Grid.Column="0" FontSize="13" TextWrapping="Wrap"
+                                           VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed"/>
+                                <Button x:Name="AddTaskButton" Grid.Column="1" Content="Add task"
+                                        Style="{StaticResource SendButtonStyle}" Click="AddTaskButton_Click"/>
+                            </Grid>
+                        </Grid>
+
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="TaskList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="TaskCard" Background="{StaticResource BgDark}" CornerRadius="8" Padding="14,10" Margin="0,0,6,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                                    <TextBlock x:Name="TaskTitleText" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                                               TextWrapping="Wrap" Foreground="{StaticResource TextLight}"/>
+                                                    <TextBlock x:Name="TaskDescriptionText" Text="{Binding Description}" FontSize="13" TextWrapping="Wrap"
+                                                               Foreground="{StaticResource TextLight}" Opacity="0.75" Margin="0,2,0,0"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                        <TextBlock x:Name="ReminderLabel" Text="{Binding ReminderText}" FontSize="12"
+                                                                   Foreground="{StaticResource AccentGreen}"/>
+                                                        <TextBlock x:Name="DueBadge" Text="   Due now" FontSize="12" FontWeight="Bold"
+                                                                   Foreground="{StaticResource AccentRed}" Visibility="Collapsed"/>
+                                                        <TextBlock x:Name="CompletedBadge" Text="   Completed" FontSize="12" FontWeight="Bold"
+                                                                   Foreground="{StaticResource AccentGreen}" Visibility="Collapsed"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button x:Name="CompleteButton" Content="Complete" Tag="{Binding}" Margin="0,0,8,0"
+                                                            Style="{StaticResource CompleteButtonStyle}" Click="CompleteTask_Click"/>
+                                                    <Button Content="Delete" Tag="{Binding}"
+                                                            Style="{StaticResource DeleteButtonStyle}" Click="DeleteTask_Click"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                <Setter TargetName="TaskTitleText" Property="TextDecorations" Value="Strikethrough"/>
+                                                <Setter TargetName="TaskCard" Property="Opacity" Value="0.6"/>
+                                                <Setter TargetName="CompleteButton" Property="Visibility" Value="Collapsed"/>
+                                                <Setter TargetName="CompletedBadge" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsDue}" Value="True">
+                                                <Setter TargetName="ReminderLabel" Property="Foreground" Value="{StaticResource AccentRed}"/>
+                                                <Setter TargetName="DueBadge" Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Description}" Value="">
+                                                <Setter TargetName="TaskDescriptionText" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <TextBlock x:Name="TasksEmpty" Grid.Row="2" TextWrapping="Wrap" TextAlignment="Center" Visibility="Collapsed"
+                                   Text="No tasks yet. Add one above, for example 'Enable two-factor authentication'."
+                                   Style="{StaticResource PlaceholderText}"/>
+                    </Grid>
                 </Border>
             </TabItem>
-            
+
 
             <TabItem x:Name="QuizTab" Header="Quiz">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="10" Padding="20">
