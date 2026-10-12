@@ -22,7 +22,7 @@ namespace CybersecurityAwarenessBot.Database
         /// <summary>
         /// Columns every SELECT reads, in the order ReadTask expects them. 
         /// </summary>
-        private const string Columns = "id, title, description, reminder_date, is_completed, created_art";
+        private const string Columns = "id, title, description, reminder_date, is_completed, created_at";
 
         private readonly ActivityLog _log;
 
