@@ -162,12 +162,30 @@ namespace CybersecurityAwarenessBot.Bot
             ["phishy"] = "phishing",
             ["2fa"] = "password",
             ["mfa"] = "password",
+            ["two-factor"] = "password",
+            ["authentication"] = "password",
             ["passcode"] = "password",
             ["browse"] = "browsing",
             ["browser"] = "browsing",
             ["hotspot"] = "wifi",
             ["url"] = "link",
             ["private"] = "privacy"
+        };
+
+        /// <summary>
+        /// A description for tasks added from the chat, based on the cybersecurity topic the task is about. The same topics and alternative words as the
+        /// tips are used, so "Enable 2FA" is recognised as a password task.
+        /// </summary>
+        private readonly Dictionary<string, string> _taskDescriptions = new()
+        {
+            ["password"] = "Use strong, unique passwords and turn on two-factor authentication to keep your accounts secure.",
+            ["phishing"] = "Learn to spot suspicious emails and messages so you don't fall for phishing attempts.",
+            ["browsing"] = "Keep your browser updated and check that websites are secure before entering personal details.",
+            ["wifi"] = "Avoid sensitive activities on public Wi-Fi, or use mobile data or a trusted VPN instead.",
+            ["scam"] = "Stay alert to online scams and verify unexpected requests before you act on them.",
+            ["link"] = "Check where links really lead before you click them, especially in emails.",
+            ["permission"] = "Review which apps can access your location, camera, contacts and microphone.",
+            ["privacy"] = "Review account privacy settings to ensure your data is protected."
         };
 
 
@@ -190,7 +208,21 @@ namespace CybersecurityAwarenessBot.Bot
         }
 
         /// <summary>
-        /// Then general questions and small talk, matched as whole words or phrases
+        /// Chooses a description for a task added from the chat, based on the topic its title mentions.
+        /// </summary>
+        /// <param name="title">The task's title</param>
+        /// <returns>A description that explains why the task matters</returns>
+        public string GetTaskDescription(string title)
+        {
+            string? topic = FindTopic(title.ToLowerInvariant());
+            return topic != null && _taskDescriptions.TryGetValue(topic, out string? description)
+                ? description
+                : "Added from the chat. Completing it will help keep you safe online.";
+        }
+
+
+        /// <summary>
+        /// Finds the reply for the user's message: a cybersecurity topic first, then general questions and small talk, matched as whole words or phrases.
         /// </summary>
         /// <param name="input">This is the user's message, which is already trimmed and converted to lower case by the InputValidator.</param>
         /// <returns>A tip for the matching topic, the answer to a general question, or the default response if nothing matches.</returns>

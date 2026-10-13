@@ -53,13 +53,15 @@ namespace CybersecurityAwarenessBot.Part3
         public MainWindow()
         {
             InitializeComponent();
-            _bot = new ChatBot(_log);
-            _quiz = new QuizManager(_log);
             _tasks = new TaskRepository(_log);
+            _bot = new ChatBot(_log, _tasks);
+            _quiz = new QuizManager(_log);
             AsciiHeader.Text = _logo.GetLogo();
             // Refresh the activity log tab whenever anything is logged
             _log.EntryAdded += RefreshLogTab;
             RefreshLogTab();
+            // Reload the Tasks tab whenever a task is added or changed, whether from the tab or from the chat
+            _tasks.TasksChanged += RefreshTasksTab;
 
             ReminderPicker.DisplayDateStart = DateTime.Today;
         }
@@ -138,14 +140,14 @@ namespace CybersecurityAwarenessBot.Part3
 
 
 
-        /// <summary>
+        //// <summary>
         /// Deals with the send button being clicked
         /// </summary>
         /// <param name="sender">The button raising the event.</param>
         /// <param name="e">Event data</param>
-        private void SendButton_Click(object sender, RoutedEventArgs e)
+        private async void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            SendMessage();
+            await SendMessageAsync();
         }
 
         /// <summary>
@@ -153,18 +155,19 @@ namespace CybersecurityAwarenessBot.Part3
         /// </summary>
         /// <param name="sender">Text box raising the event</param>
         /// <param name="e">Event data used to check which key was pressed</param>
-        private void InputBox_KeyDown(object sender, KeyEventArgs e)
+        private async void InputBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                SendMessage();
+                await SendMessageAsync();
             }
         }
 
         /// <summary>
         /// Function that checks if user has enter something - if blank/white space then it returns. Shows the user and bots responses.
+        /// It is async because a task or reminder typed in the chat is saved to the database before the chatbot replies.
         /// </summary>
-        private void SendMessage()
+        private async Task SendMessageAsync()
         {
             string userInput = InputBox.Text;
 
@@ -173,7 +176,7 @@ namespace CybersecurityAwarenessBot.Part3
             {
                 string prompt = _awaitingName
                     ? "You haven't typed anything yet. Please tell me your name so I can personalise our chat."
-                    : "You haven't typed anything yet. Ask me about passwords, phishing or safe browsing, or say 'tell me more' to continue the last topic.";
+                    : "You haven't typed anything yet. Ask me about passwords, phishing or safe browsing, or say 'tell me more' tos continue the last topic.";
 
                 AddMessage("Bot", prompt, false);
                 InputBox.Clear();
@@ -207,10 +210,12 @@ namespace CybersecurityAwarenessBot.Part3
             string label = string.IsNullOrWhiteSpace(_bot.User.Name) ? "You" : _bot.User.Name;
             AddMessage(label, userInput, true);
 
-            AddMessage("Bot", _bot.GetReply(userInput), false);
-
+            // Cleared before waiting for the reply, so the user's message doesn't sit in the box while a task is saved
             InputBox.Clear();
             InputBox.Focus();
+
+            string reply = await _bot.GetReplyAsync(userInput);
+            AddMessage("Bot", reply, false);
         }
 
         /// <summary>
@@ -377,7 +382,16 @@ namespace CybersecurityAwarenessBot.Part3
         }
 
         /// <summary>
-        /// Saves a new task from the form, then clears the form and reloads the list.
+        /// Runs when the TasksChanged event is raised, so a task added in the chat appears in the Tasks tab straight away.
+        /// async void is only used here because it is an event handler.
+        /// </summary>
+        private async void RefreshTasksTab()
+        {
+            await LoadTasksAsync();
+        }
+
+        /// <summary>
+        ///  Saves a new task from the form, then clears the form. The list reloads itself through the TasksChanged event.
         /// </summary>
         /// <param name="sender">The button raising the event.</param>
         /// <param name="e">Event data</param>
@@ -395,9 +409,7 @@ namespace CybersecurityAwarenessBot.Part3
                 ReminderPicker.SelectedDate = null;
 
                 string reminder = task.ReminderDate == null ? "" : $" I'll remind you on {task.ReminderDate:d MMM yyyy}.";
-                ShowTaskMessage($"Task added: '{task.Title}'.{reminder}", isError: false);
-
-                await LoadTasksAsync();
+                ShowTaskMessage($"Task added: '{task.Title}'.{reminder}", isError: false);    
             }
             catch (ArgumentException ex)
             {
@@ -462,7 +474,12 @@ namespace CybersecurityAwarenessBot.Part3
             {
                 bool changed = await action();
                 ShowTaskMessage(changed ? successMessage : "That task no longer exists, so the list has been refreshed.", isError: !changed);
-                await LoadTasksAsync();
+                // A successful change already reloads the list through the TasksChanged event, so only reload here if nothing changed
+                if (!changed)
+                {
+                    await LoadTasksAsync();
+                }
+
             }
             catch (MySqlException ex)
             {

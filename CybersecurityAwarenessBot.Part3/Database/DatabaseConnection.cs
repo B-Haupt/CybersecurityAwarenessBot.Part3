@@ -11,7 +11,7 @@ namespace CybersecurityAwarenessBot.Database
     /// This class creates the connection to the MySQL database that stores the user's tasks.
     /// It also turns the MySQL errors into messages that the user can understand.
     /// </summary>
-    internal class DatabaseConnection
+    internal static class DatabaseConnection
     {
 
         /// <summary>

@@ -27,6 +27,11 @@ namespace CybersecurityAwarenessBot.Database
         private readonly ActivityLog _log;
 
         /// <summary>
+        /// Raised after a task is added, completed, changed or deleted, so the Tasks tab can refresh itself, whether the change came from the tab or the chat.
+        /// </summary>
+        public event Action? TasksChanged;
+
+        /// <summary>
         /// The creates the repository with the activity log it should record task action in.
         /// </summary>
         /// <param name="log">The shared activity log</param>
@@ -83,6 +88,7 @@ namespace CybersecurityAwarenessBot.Database
 
             string reminderNote = reminder.HasValue ? $"reminder set for {FormatDate(reminder.Value)}" : "no reminder";
             _log.Add($"Task added: '{title}' ({reminderNote})");
+            TasksChanged?.Invoke();
 
             return task;
         }
@@ -99,6 +105,7 @@ namespace CybersecurityAwarenessBot.Database
             if (updated)
             {
                 _log.Add($"Task completed: '{task.Title}'");
+                TasksChanged?.Invoke();
             }
             return updated;
         }
@@ -125,6 +132,7 @@ namespace CybersecurityAwarenessBot.Database
                 _log.Add(reminder.HasValue
                     ? $"Reminder set: '{task.Title}' on {FormatDate(reminder.Value)}"
                     : $"Reminder removed: '{task.Title}'");
+                TasksChanged?.Invoke();
             }
             return updated;
         }
@@ -140,6 +148,7 @@ namespace CybersecurityAwarenessBot.Database
             if (deleted)
             {
                 _log.Add($"Task deleted: '{task.Title}'");
+                TasksChanged?.Invoke();
             }
             return deleted;
         }
