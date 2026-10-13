@@ -1,4 +1,7 @@
 ﻿using CybersecurityAwarenessBot.Features;
+using CybersecurityAwarenessBot.Database;
+using MySqlConnector;
+using System.Text.RegularExpressions;
 
 
 namespace CybersecurityAwarenessBot.Bot
@@ -29,6 +32,22 @@ namespace CybersecurityAwarenessBot.Bot
         private bool _lastReplyWasLog;
 
         /// <summary>
+        /// Saves tasks and reminders that the user asks for in the chat. It is the same repository the Tasks tab uses, so both always agree.
+        /// </summary>
+        private readonly TaskRepository _tasks;
+
+        /// <summary>
+        /// Recognises task and reminder requests, however they are worded.
+        /// </summary>
+        private readonly TaskCommandRecogniser _taskCommands = new();
+
+        /// <summary>
+        /// The task the chatbot just asked "Would you like to set a reminder?" about, so the user's next answer ("yes, in 3 days") is applied to it.
+        /// Null when the chatbot isn't waiting for an answer.
+        /// </summary>
+        private TaskItem? _pendingReminderTask;
+
+        /// <summary>
         /// The user's details, it is public so that the window can read the name for message labels and set it when the user first enters it.
         /// </summary>
         public UserProfile User { get; } = new();
@@ -45,12 +64,14 @@ namespace CybersecurityAwarenessBot.Bot
             "recent actions", "show history" };
 
         /// <summary>
-        /// Creates the chatbot with the activity log it should record its actions in.
+        /// Creates the chatbot with the activity log it should record its actions in, and the repository it saves tasks to.
         /// </summary>
         /// <param name="log">The shared activity log</param>
-        public ChatBot(ActivityLog log) 
+        /// <param name="tasks">The shared task repository</param>
+        public ChatBot(ActivityLog log, TaskRepository tasks)
         {
             _log = log;
+            _tasks = tasks;
         }
 
         /// <summary>
@@ -80,7 +101,7 @@ namespace CybersecurityAwarenessBot.Bot
         /// </summary>
         /// <param name="userInput">Raw text the user entered</param>
         /// <returns>Chatbot reply that is ready to be displayed in the chat</returns>
-        public string GetReply(string userInput)
+        public async Task<string> GetReplyAsync(string userInput)
         {
             string input = _validator.NormaliseInput(userInput);
 
@@ -108,8 +129,31 @@ namespace CybersecurityAwarenessBot.Bot
             {
                 return ShowLog(fromStart: true);
             }
+            // "Add a task to enable 2FA" or "Remind me to update my password tomorrow", however it is worded
+            TaskCommand? command = _taskCommands.Recognise(userInput);
 
-            // Questions about what the chatbot remembers, e.g. "what is my favourite topic?"
+            // An answer to "Would you like to set a reminder?", e.g. "yes, in 3 days" or "no thanks"
+            if (_pendingReminderTask != null && (command == null || command.Title.Length == 0))
+            {
+                string? followUp = await HandleReminderFollowUpAsync(input, command);
+                if (followUp != null)
+                {
+                    return followUp;
+                }
+            }
+
+            if (command != null)
+            {
+                return await HandleTaskCommandAsync(command);
+            }
+
+            // Mentions tasks or reminders but isn't a request, so explain how instead of "I didn't understand"
+            if (matched == null && (input.Contains("task") || input.Contains("remind")))
+            {
+                return "I can keep track of cybersecurity tasks for you. Try 'Add a task to enable two-factor authentication' or "
+                    + "'Remind me to update my password tomorrow'. You can also see and manage your tasks in the Tasks tab.";
+            }
+            // Questions about what the chatbot remembers
             string? memoryAnswer = AnswerMemoryQuestion(input, matched);
             if (memoryAnswer != null)
             {
@@ -175,6 +219,126 @@ namespace CybersecurityAwarenessBot.Bot
             }
 
             return reply + GetRecall(matched);
+        }
+
+        /// <summary>
+        /// Adds the task the user asked for. If they gave a timeframe the reminder is set straight away; if not, the chatbot asks whether they want one.
+        /// </summary>
+        /// <param name="command">What the user asked for</param>
+        /// <returns>A confirmation, a question about the reminder, or a message explaining what went wrong</returns>
+        private async Task<string> HandleTaskCommandAsync(TaskCommand command)
+        {
+            _pendingReminderTask = null;
+
+            // "Add a task" or "Remind me" on its own
+            if (command.Title.Length == 0)
+            {
+                return command.IsReminderRequest
+                    ? "What would you like me to remind you about? For example: 'Remind me to update my password tomorrow'."
+                    : "What's the task? For example: 'Add a task to enable two-factor authentication'.";
+            }
+
+            try
+            {
+                // The description comes from the topic the title mentions, so the reply stays consistent with the chatbot's tips
+                string description = _botResponses.GetTaskDescription(command.Title);
+                TaskItem task = await _tasks.AddAsync(command.Title, description, command.ReminderDate);
+
+                if (task.ReminderDate != null)
+                {
+                    string when = DescribeWhen(task.ReminderDate.Value);
+                    return command.IsReminderRequest
+                        ? $"Reminder set for '{task.Title}' {when}. I've added it to your tasks."
+                        : $"Task added: '{task.Title}', with a reminder {when}.";
+                }
+
+                // No timeframe was given, so ask for one and remember which task the answer is for
+                _pendingReminderTask = task;
+                return command.IsReminderRequest
+                    ? $"I've added '{task.Title}' to your tasks. When would you like me to remind you? You can say something like 'tomorrow', 'in 3 days' or '20 October'."
+                    : $"Task added: '{task.Title}' with the description \"{description}\" Would you like to set a reminder for this task? "
+                      + "You can say something like 'yes, in 3 days' or 'no thanks'.";
+            }
+            catch (ArgumentException ex)
+            {
+                return $"I couldn't add that task: {ex.Message}";
+            }
+            catch (MySqlException ex)
+            {
+                return DatabaseConnection.DescribeError(ex);
+            }
+        }
+
+        /// <summary>
+        /// Handles the user's answer after the chatbot asked "Would you like to set a reminder?".
+        /// </summary>
+        /// <param name="input">Normalised user input</param>
+        /// <param name="command">The recognised command, if the answer was worded as one, e.g. "yes, remind me in 3 days"</param>
+        /// <returns>The reply, or null if the user has moved on to something else</returns>
+        private async Task<string?> HandleReminderFollowUpAsync(string input, TaskCommand? command)
+        {
+            TaskItem task = _pendingReminderTask!;
+            DateTime? date = command?.ReminderDate ?? _taskCommands.FindTimeframe(input).Date;
+
+            // "Yes, remind me in 3 days", "tomorrow", "next Friday"
+            if (date != null)
+            {
+                _pendingReminderTask = null;
+                try
+                {
+                    // False means the task was deleted in the Tasks tab before the user answered
+                    if (!await _tasks.SetReminderAsync(task, date))
+                    {
+                        return $"I couldn't find '{task.Title}' any more. It may have been deleted in the Tasks tab.";
+                    }
+
+                    return $"Got it! I'll remind you about '{task.Title}' {DescribeWhen(date.Value)}.";
+                }
+                catch (ArgumentException ex)
+                {
+                    return $"I couldn't set that reminder: {ex.Message}";
+                }
+                catch (MySqlException ex)
+                {
+                    return DatabaseConnection.DescribeError(ex);
+                }
+            }
+
+            // "No thanks", "not now"
+            if (Regex.IsMatch(input, @"^(?:no|nope|nah|not now|not yet|skip|don't|dont)\b"))
+            {
+                _pendingReminderTask = null;
+                return $"No problem, I've saved '{task.Title}' without a reminder. You can see it in the Tasks tab.";
+            }
+
+            // "Yes" or "remind me" without a time, so ask when (and keep waiting for the answer)
+            if (Regex.IsMatch(input, @"^(?:yes|yeah|yep|yup|sure|ok|okay|please|definitely|of course)\b") || command != null)
+            {
+                return "When would you like me to remind you? You can say something like 'tomorrow', 'in 3 days', 'next week' or '20 October'.";
+            }
+
+            // Anything else means the user has moved on, so stop waiting and reply to it normally
+            _pendingReminderTask = null;
+            return null;
+        }
+
+        /// <summary>
+        /// Describes a reminder date in a friendly way, e.g. "tomorrow (13 Oct 2026)", "in 3 days (15 Oct 2026)" or "on 20 Nov 2026".
+        /// </summary>
+        /// <param name="date">The reminder date</param>
+        /// <returns>The description</returns>
+        private static string DescribeWhen(DateTime date)
+        {
+            int days = (date.Date - DateTime.Today).Days;
+            string exact = date.ToString("d MMM yyyy");
+
+            return days switch
+            {
+                0 => $"today ({exact})",
+                1 => $"tomorrow ({exact})",
+                < 14 => $"in {days} days ({exact})",
+                _ => $"on {exact}"
+            };
         }
 
         /// <summary>

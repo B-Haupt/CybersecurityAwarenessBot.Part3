@@ -39,7 +39,7 @@ namespace CybersecurityAwarenessBot.Database
         public bool IsCompleted { get; }
 
         /// <summary>
-        /// When the task will be added.
+        /// When the task was added.
         /// </summary>
         public DateTime CreatedAt { get; }
 
