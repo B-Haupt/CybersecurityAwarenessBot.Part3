@@ -48,6 +48,21 @@ namespace CybersecurityAwarenessBot.Bot
         private TaskItem? _pendingReminderTask;
 
         /// <summary>
+        /// The quiz, so the chatbot can tell whether a game is already in progress when the user asks to start one.
+        /// </summary>
+        private readonly QuizManager _quiz;
+
+        /// <summary>
+        /// Raised when the user asks to start the quiz in the chat. The window opens the Quiz tab, because the chatbot has no interface code.
+        /// </summary>
+        public event Action? QuizRequested;
+
+        /// <summary>
+        /// The most pending tasks listed in one chat reply, so a long list doesn't flood the chat.
+        /// </summary>
+        private const int MaxTasksInChat = 5;
+
+        /// <summary>
         /// The user's details, it is public so that the window can read the name for message labels and set it when the user first enters it.
         /// </summary>
         public UserProfile User { get; } = new();
@@ -64,14 +79,29 @@ namespace CybersecurityAwarenessBot.Bot
             "recent actions", "show history" };
 
         /// <summary>
-        /// Creates the chatbot with the activity log it should record its actions in, and the repository it saves tasks to.
+        /// Ways of asking to start the quiz, e.g. "Start the quiz", "Can I play the quiz?", "Let's play a game", "Quiz me", "Test my knowledge".
+        /// </summary>
+        private static readonly Regex QuizRequestPattern = new(
+            @"\b(?:start|begin|play|take|launch|open|try|restart)\b.*\bquiz\b|\bplay\s+(?:a\s+)?game\b|\bquiz\s+me\b|\btest\s+(?:me|my\s+knowledge)\b");
+
+        /// <summary>
+        /// Ways of asking to see tasks, e.g. "Show my tasks", "What are my reminders?", "What's on my to-do list?", "Do I have any tasks?".
+        /// </summary>
+        private static readonly Regex ShowTasksPattern = new(
+            @"\b(?:show|list|view|see|display|check)\b.*\b(?:tasks?|to-?do|reminders?)\b|\bwhat(?:'s|\s+is|\s+are)\s+(?:on\s+)?my\s+(?:tasks?|to-?do|reminders?)\b"
+            + @"|\b(?:do\s+i\s+have\s+any|any)\s+(?:tasks?|reminders?)\b|^my\s+(?:tasks|reminders|to-?do\s+list)$");
+
+        /// <summary>
+        /// Creates the chatbot with the activity log it should record its actions in, the repository it saves tasks to, and the quiz.
         /// </summary>
         /// <param name="log">The shared activity log</param>
         /// <param name="tasks">The shared task repository</param>
-        public ChatBot(ActivityLog log, TaskRepository tasks)
+        /// <param name="quiz">The shared quiz</param>
+        public ChatBot(ActivityLog log, TaskRepository tasks, QuizManager quiz)
         {
             _log = log;
             _tasks = tasks;
+            _quiz = quiz;
         }
 
         /// <summary>
@@ -147,11 +177,30 @@ namespace CybersecurityAwarenessBot.Bot
                 return await HandleTaskCommandAsync(command);
             }
 
+            // "Start the quiz", "Quiz me", "Test my knowledge"
+            if (QuizRequestPattern.IsMatch(input))
+            {
+                return StartQuizFromChat();
+            }
+
+            // "Show my tasks", "What are my reminders?"
+            if (ShowTasksPattern.IsMatch(input))
+            {
+                return await ShowTasksAsync();
+            }
+
             // Mentions tasks or reminders but isn't a request, so explain how instead of "I didn't understand"
             if (matched == null && (input.Contains("task") || input.Contains("remind")))
             {
                 return "I can keep track of cybersecurity tasks for you. Try 'Add a task to enable two-factor authentication' or "
-                    + "'Remind me to update my password tomorrow'. You can also see and manage your tasks in the Tasks tab.";
+                    + "'Remind me to update my password tomorrow', and say 'show my tasks' to see them. You can also manage your tasks in the Tasks tab.";
+            }
+
+            // Mentions the quiz but isn't asking to start it, e.g. "what is the quiz?"
+            if (matched == null && input.Contains("quiz"))
+            {
+                return $"I have a cybersecurity quiz with {_quiz.TotalQuestions} questions on phishing, passwords, safe browsing, social engineering and more. "
+                    + "Say 'start the quiz' and I'll open it for you, or use the Quiz tab.";
             }
             // Questions about what the chatbot remembers
             string? memoryAnswer = AnswerMemoryQuestion(input, matched);
@@ -320,6 +369,95 @@ namespace CybersecurityAwarenessBot.Bot
             // Anything else means the user has moved on, so stop waiting and reply to it normally
             _pendingReminderTask = null;
             return null;
+        }
+
+        /// <summary>
+        /// Asks the window to open the quiz. If a game is already in progress the user is taken back to it rather than starting again.
+        /// </summary>
+        /// <returns>A reply explaining what happened</returns>
+        private string StartQuizFromChat()
+        {
+            // Checked before the event is raised, because the window starts a new game when it handles the event
+            bool alreadyRunning = _quiz.IsRunning;
+            int questionNumber = _quiz.QuestionNumber;
+
+            QuizRequested?.Invoke();
+
+            return alreadyRunning
+                ? $"You're already in the middle of the quiz (question {questionNumber} of {_quiz.TotalQuestions}), so I've taken you back to it."
+                : $"Let's test your knowledge, {User.Name}! I've opened the Quiz tab and started a new game of {_quiz.TotalQuestions} questions. "
+                  + "Come back to the chat whenever you're done.";
+        }
+
+        /// <summary>
+        /// Lists the user's pending tasks in the chat, with their reminders, and says how many are completed.
+        /// </summary>
+        /// <returns>The list, a message if there are no tasks, or a message explaining a database problem</returns>
+        private async Task<string> ShowTasksAsync()
+        {
+            try
+            {
+                List<TaskItem> tasks = await _tasks.GetAllAsync();
+                if (tasks.Count == 0)
+                {
+                    return $"You don't have any tasks yet, {User.Name}. Try 'Add a task to enable two-factor authentication' or 'Remind me to update my password tomorrow'.";
+                }
+
+                // Most urgent first: earliest reminder at the top, tasks without a reminder at the end
+                List<TaskItem> pending = tasks.Where(task => !task.IsCompleted)
+                    .OrderBy(task => task.ReminderDate ?? DateTime.MaxValue)
+                    .ToList();
+                int completed = tasks.Count - pending.Count;
+
+                if (pending.Count == 0)
+                {
+                    return $"Well done, {User.Name}! All {completed} of your tasks are completed. Add another whenever you think of something.";
+                }
+
+                string text = $"Here are your pending tasks, {User.Name}:";
+                int shown = Math.Min(pending.Count, MaxTasksInChat);
+                for (int i = 0; i < shown; i++)
+                {
+                    text += $"\n{i + 1}. {pending[i].Title} - {DescribeReminder(pending[i])}";
+                }
+
+                if (pending.Count > shown)
+                {
+                    text += $"\n...and {pending.Count - shown} more.";
+                }
+
+                if (completed > 0)
+                {
+                    text += $"\n\nYou've also completed {completed} task(s).";
+                }
+
+                return text + "\n\nYou can complete or delete tasks in the Tasks tab.";
+            }
+            catch (MySqlException ex)
+            {
+                return DatabaseConnection.DescribeError(ex);
+            }
+        }
+
+        /// <summary>
+        /// Describes a task's reminder for the task list.
+        /// </summary>
+        /// <param name="task">The task</param>
+        /// <returns>The description</returns>
+        private static string DescribeReminder(TaskItem task)
+        {
+            if (task.ReminderDate == null)
+            {
+                return "no reminder";
+            }
+
+            // Today or already passed
+            if (task.IsDue)
+            {
+                return $"reminder due ({task.ReminderDate.Value:d MMM yyyy})";
+            }
+
+            return "reminder " + DescribeWhen(task.ReminderDate.Value);
         }
 
         /// <summary>
