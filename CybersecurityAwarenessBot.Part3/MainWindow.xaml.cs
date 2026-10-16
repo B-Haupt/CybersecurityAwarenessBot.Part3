@@ -54,14 +54,16 @@ namespace CybersecurityAwarenessBot.Part3
         {
             InitializeComponent();
             _tasks = new TaskRepository(_log);
-            _bot = new ChatBot(_log, _tasks);
             _quiz = new QuizManager(_log);
+            _bot = new ChatBot(_log, _tasks, _quiz);
             AsciiHeader.Text = _logo.GetLogo();
             // Refresh the activity log tab whenever anything is logged
             _log.EntryAdded += RefreshLogTab;
             RefreshLogTab();
             // Reload the Tasks tab whenever a task is added or changed, whether from the tab or from the chat
             _tasks.TasksChanged += RefreshTasksTab;
+            // Open the Quiz tab when the user asks for the quiz in the chat, e.g. "quiz me"
+            _bot.QuizRequested += OpenQuizTab;
 
             ReminderPicker.DisplayDateStart = DateTime.Today;
         }
@@ -140,7 +142,7 @@ namespace CybersecurityAwarenessBot.Part3
 
 
 
-        //// <summary>
+        /// <summary>
         /// Deals with the send button being clicked
         /// </summary>
         /// <param name="sender">The button raising the event.</param>
@@ -176,7 +178,7 @@ namespace CybersecurityAwarenessBot.Part3
             {
                 string prompt = _awaitingName
                     ? "You haven't typed anything yet. Please tell me your name so I can personalise our chat."
-                    : "You haven't typed anything yet. Ask me about passwords, phishing or safe browsing, or say 'tell me more' tos continue the last topic.";
+                    : "You haven't typed anything yet. Ask me about passwords, phishing or safe browsing, or say 'tell me more' to continue the last topic.";
 
                 AddMessage("Bot", prompt, false);
                 InputBox.Clear();
@@ -202,8 +204,9 @@ namespace CybersecurityAwarenessBot.Part3
                 _bot.User.Name = name;
                 _awaitingName = false;
 
-                AddMessage("Bot", $"Welcome, {name}! I'm a Cybersecurity Awareness Bot. You can ask me about {_bot.TopicList}. "
-                    + "You can also say 'tell me more' for another tip on the same topic.", false);
+                AddMessage("Bot", $"Welcome, {name}! I'm a Cybersecurity Awareness Bot. You can ask me about {_bot.TopicList}. " 
+                    + "You can also say 'tell me more' for another tip on the same topic, add a task or reminder (e.g. 'Remind me to update my password tomorrow'), " 
+                    + "say 'show my tasks', 'start the quiz' or 'show activity log'.", false);
                 return;
             }
 
@@ -246,11 +249,32 @@ namespace CybersecurityAwarenessBot.Part3
         }
 
         /// <summary>
-        /// Starts a new quiz and shows the first question. Used by both the Start quiz and Play again buttons.
+        /// Runs when the Start quiz or Play again button is clicked.
         /// </summary>
         /// <param name="sender">The button raising the event.</param>
         /// <param name="e">Event data</param>
         private void StartQuizButton_Click(object sender, RoutedEventArgs e)
+        {
+            StartQuiz();
+        }
+
+        /// <summary>
+        /// Runs when the user asks for the quiz in the chat. Switches to the Quiz tab, and starts a new game unless one is already in progress.
+        /// </summary>
+        private void OpenQuizTab()
+        {
+            MainTabs.SelectedItem = QuizTab;
+
+            if (!_quiz.IsRunning)
+            {
+                StartQuiz();
+            }
+        }
+
+        /// <summary>
+        /// Starts a new game and shows the first question. Used by the Start quiz and Play again buttons, and by the chat.
+        /// </summary>
+        private void StartQuiz()
         {
             _quiz.Start();
 

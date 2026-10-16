@@ -23,7 +23,8 @@ namespace CybersecurityAwarenessBot.Bot
             ["your purpose"] = "My purpose is to provide you with safety tips to help you navigate the dangers online.",
             ["what do you do"] = "I share practical tips to help you stay safe online, and you can ask me follow-up questions about any topic.",
             ["who are you"] = "I'm the Cybersecurity Awareness Bot. I'm here to help you stay safe online.",
-            ["what can i ask"] = "You can ask me about " + TopicList + ". You can also say 'tell me more' for another tip on the same topic.",
+            ["what can i ask"] = "You can ask me about " + TopicList + ". You can also say 'tell me more' for another tip on the same topic, "
+             + "add a task or reminder, say 'show my tasks', start the quiz, or ask to see your activity log.",
             ["thank you"] = "You're welcome! Let me know if there's anything else you'd like to know about staying safe online.",
             ["thanks"] = "You're welcome! Let me know if there's anything else you'd like to know about staying safe online.",
             ["hello"] = "Hello again! What would you like to learn about today?",
@@ -103,7 +104,8 @@ namespace CybersecurityAwarenessBot.Bot
         /// <summary>
         /// Created a default response in case the user's input has no match. It also tells the user what topics are available to ask the chatbot.
         /// </summary>
-        private readonly string _defaultResponse = "I didn't quite understand. Could you please rephrase the question?\nYou can ask me about " + TopicList + ".";
+        private readonly string _defaultResponse = "I didn't quite understand. Could you please rephrase the question?\nYou can ask me about " + TopicList
+        + ", or ask me to add a task, show your tasks, start the quiz or show your activity log.";
 
         /// <summary>
         /// This is used to pick a random tip from a topic's list. Declared once as a field rather than creating it inside the method as creating several Random
