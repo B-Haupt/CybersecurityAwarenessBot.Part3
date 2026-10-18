@@ -205,8 +205,15 @@ namespace CybersecurityAwarenessBot.Part3
                 _awaitingName = false;
 
                 AddMessage("Bot", $"Welcome, {name}! I'm a Cybersecurity Awareness Bot. You can ask me about {_bot.TopicList}. " 
-                    + "You can also say 'tell me more' for another tip on the same topic, add a task or reminder (e.g. 'Remind me to update my password tomorrow'), " 
+                    + "You can also say 'tell me more' for another tip on the same topic, add a task or reminder (e.g. 'Remind me to update my password tomorrow'), "
                     + "say 'show my tasks', 'start the quiz' or 'show activity log'.", false);
+
+                // Remind the user straight away about anything due today or overdue
+                string? reminders = await _bot.GetDueReminderMessageAsync();
+                if (reminders != null)
+                {
+                    AddMessage("Bot", reminders, false);
+                }
                 return;
             }
 
@@ -389,9 +396,11 @@ namespace CybersecurityAwarenessBot.Part3
                 TaskList.ItemsSource = tasks;
 
                 int pending = tasks.Count(task => !task.IsCompleted);
+                int due = tasks.Count(task => task.IsDue);
+                string dueText = due == 0 ? "" : $" {due} reminder(s) due.";
                 TasksSummary.Text = tasks.Count == 0
                     ? "Keep track of cybersecurity actions you want to take, with an optional reminder."
-                    : $"{pending} pending, {tasks.Count - pending} completed.";
+                    : $"{pending} pending, {tasks.Count - pending} completed.{dueText}";
 
                 TasksEmpty.Text = "No tasks yet. Add one above, for example 'Enable two-factor authentication'.";
                 TasksEmpty.Visibility = tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
