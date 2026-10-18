@@ -440,6 +440,51 @@ namespace CybersecurityAwarenessBot.Bot
         }
 
         /// <summary>
+        /// Builds the message shown when the user starts chatting, listing the reminders that are due today or overdue, so the user is actually reminded.
+        /// </summary>
+        /// <returns>The message, or null if nothing is due</returns>
+        public async Task<string?> GetDueReminderMessageAsync()
+        {
+            try
+            {
+                List<TaskItem> due = await _tasks.GetDueRemindersAsync();
+                if (due.Count == 0)
+                {
+                    return null;
+                }
+
+                string text = $"Before we start, {User.Name}, you have {due.Count} reminder(s) due:";
+                int shown = Math.Min(due.Count, MaxTasksInChat);
+                for (int i = 0; i < shown; i++)
+                {
+                    text += $"\n{i + 1}. {due[i].Title} - {DescribeDue(due[i].ReminderDate!.Value)}";
+                }
+
+                if (due.Count > shown)
+                {
+                    text += $"\n...and {due.Count - shown} more.";
+                }
+
+                return text + "\n\nYou can mark them as completed in the Tasks tab, or say 'show my tasks' to see everything.";
+            }
+            catch (MySqlException ex)
+            {
+                // The Tasks tab explains the problem too, but the user should know their reminders couldn't be checked
+                return "I couldn't check your reminders. " + DatabaseConnection.DescribeError(ex);
+            }
+        }
+
+        /// <summary>
+        /// Describes a reminder that is due
+        /// </summary>
+        /// <param name="date">The reminder date, today or earlier</param>
+        /// <returns>The description</returns>
+        private static string DescribeDue(DateTime date)
+        {
+            return date.Date == DateTime.Today ? "due today" : $"overdue since {date:d MMM yyyy}";
+        }
+
+        /// <summary>
         /// Describes a task's reminder for the task list.
         /// </summary>
         /// <param name="task">The task</param>
@@ -454,7 +499,7 @@ namespace CybersecurityAwarenessBot.Bot
             // Today or already passed
             if (task.IsDue)
             {
-                return $"reminder due ({task.ReminderDate.Value:d MMM yyyy})";
+                return "reminder " + DescribeDue(task.ReminderDate.Value);
             }
 
             return "reminder " + DescribeWhen(task.ReminderDate.Value);
