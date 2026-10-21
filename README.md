@@ -199,10 +199,10 @@ A GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every push
 ![Successful CI workflow runs](CybersecurityAwarenessBot.Part3/Pictures/CIWorkflow.png)
  
 ## Releases
- 
+
 | Version | What it added |
 |---------|---------------|
-| v3.0 | Tabbed layout (Chat, Tasks, Quiz, Activity Log), greeting played without freezing the window, and the activity log with "show more" in the chat and its own tab |
-| v3.1 | Cybersecurity quiz with 15 multiple choice and true/false questions, coloured feedback, explanations, score tracking and final feedback |
-| v3.2 | Task assistant saved in MySQL (add, view, complete, delete), NLP task and reminder commands in the chat, quiz and task commands from the chat, and due reminders at startup |
-| v3.3 | Final README with setup instructions, usage examples and screenshots |
+| v3.0 | Part 3 foundation: project set up from the final Part 2 code, expanded keyword recognition and small talk, greeting played without freezing the window, and the tabbed layout (Chat, Tasks, Quiz, Activity Log) |
+| v3.1 | Activity log (in the chat and its own tab, 10 at a time with "show more") and the 15-question quiz with feedback, score tracking and final results |
+| v3.2 | Task assistant saved in MySQL, NLP task and reminder commands in the chat, quiz and task commands from the chat, and due reminders at startup |
+| v3.3 | Final README with setup instructions, usage examples, screenshots and the video link |
