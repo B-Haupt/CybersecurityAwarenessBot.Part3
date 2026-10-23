@@ -101,17 +101,20 @@
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="Description (optional)" Style="{StaticResource SubtleText}" Margin="0,10,0,4"/>
                             <TextBox x:Name="TaskDescriptionBox" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" MaxLength="500" Style="{StaticResource FormTextBox}"/>
-
                             <Grid Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="TaskMessage" Grid.Column="0" FontSize="13" TextWrapping="Wrap"
                                            VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed"/>
-                                <Button x:Name="AddTaskButton" Grid.Column="1" Content="Add task"
+                                <Button x:Name="RefreshTasksButton" Grid.Column="1" Content="Refresh" Margin="0,0,10,0"
+                                        Style="{StaticResource SendButtonStyle}" Click="RefreshTasksButton_Click"/>
+                                <Button x:Name="AddTaskButton" Grid.Column="2" Content="Add task"
                                         Style="{StaticResource SendButtonStyle}" Click="AddTaskButton_Click"/>
                             </Grid>
+                           
                         </Grid>
 
                         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">

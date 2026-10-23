@@ -76,20 +76,21 @@ namespace CybersecurityAwarenessBot.Bot
         /// Phrases that ask to see the activity log
         /// </summary>
         private static readonly string[] LogPhrases = { "activity log", "what have you done", "show log", "show the log", "show me the log",
-            "recent actions", "show history" };
+            "recent actions", "show history", "show my activity" };
 
         /// <summary>
-        /// Ways of asking to start the quiz, e.g. "Start the quiz", "Can I play the quiz?", "Let's play a game", "Quiz me", "Test my knowledge".
+        /// Ways of asking to start the quiz, e.g. "Start the quiz", "Can I play the quiz?", "Let's play a game", "Cybersecurity game", "Quiz me",
+        /// "Test my knowledge", "I want to test my cybersecurity knowledge".
         /// </summary>
-        private static readonly Regex QuizRequestPattern = new(
-            @"\b(?:start|begin|play|take|launch|open|try|restart)\b.*\bquiz\b|\bplay\s+(?:a\s+)?game\b|\bquiz\s+me\b|\btest\s+(?:me|my\s+knowledge)\b");
+        private static readonly Regex QuizRequestPattern = new(@"\b(?:start|begin|play|take|launch|open|try|restart)\b.*\bquiz\b|\bplay\s+(?:a\s+)?game\b|\b(?:cyber(?:security)?|quiz)\s+game\b|\bquiz\s+me\b|\btest\s+(?:me|my\s+(?:\w+\s+)?knowledge)\b");
 
         /// <summary>
-        /// Ways of asking to see tasks, e.g. "Show my tasks", "What are my reminders?", "What's on my to-do list?", "Do I have any tasks?".
+        /// Ways of asking to see tasks, e.g. "Show my tasks", "What are my reminders?", "What's on my to-do list?", "Do I have any tasks?", "What tasks do I have?".
         /// </summary>
         private static readonly Regex ShowTasksPattern = new(
             @"\b(?:show|list|view|see|display|check)\b.*\b(?:tasks?|to-?do|reminders?)\b|\bwhat(?:'s|\s+is|\s+are)\s+(?:on\s+)?my\s+(?:tasks?|to-?do|reminders?)\b"
-            + @"|\b(?:do\s+i\s+have\s+any|any)\s+(?:tasks?|reminders?)\b|^my\s+(?:tasks|reminders|to-?do\s+list)$");
+            + @"|\b(?:do\s+i\s+have\s+any|any)\s+(?:tasks?|reminders?)\b|^my\s+(?:tasks|reminders|to-?do\s+list)$"
+            + @"|\b(?:what|which)\s+(?:tasks|reminders)\s+(?:do\s+i\s+have|are\s+(?:due|pending|left))\b");
 
         /// <summary>
         /// Creates the chatbot with the activity log it should record its actions in, the repository it saves tasks to, and the quiz.
@@ -381,6 +382,12 @@ namespace CybersecurityAwarenessBot.Bot
             bool alreadyRunning = _quiz.IsRunning;
             int questionNumber = _quiz.QuestionNumber;
 
+            if (!alreadyRunning)
+            {
+                // The quiz itself logs "Quiz started", so this records that the request came from the chat
+                _log.Add("Opened the quiz from the chat");
+            }
+
             QuizRequested?.Invoke();
 
             return alreadyRunning
@@ -413,6 +420,8 @@ namespace CybersecurityAwarenessBot.Bot
                 {
                     return $"Well done, {User.Name}! All {completed} of your tasks are completed. Add another whenever you think of something.";
                 }
+
+                _log.Add($"Listed {pending.Count} pending task(s) in the chat");
 
                 string text = $"Here are your pending tasks, {User.Name}:";
                 int shown = Math.Min(pending.Count, MaxTasksInChat);

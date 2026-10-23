@@ -19,7 +19,7 @@ namespace CybersecurityAwarenessBot.Features
         /// <summary>
         /// Every entry, oldest first.
         /// </summary>
-        public readonly List<ActivityEntry> _entries = new();
+        private readonly List<ActivityEntry> _entries = new();
 
         /// <summary>
         /// This raised whenever an entry is added.
