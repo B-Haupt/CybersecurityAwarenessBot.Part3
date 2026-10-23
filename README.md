@@ -40,6 +40,7 @@ The script creates:
 - the `cybersecurity_bot` database
 - the `tasks` table (id, title, description, reminder date, completed flag and the date it was created)
 - a login called `cyberbot_app` that can only read and change rows in this one database
+
 The chatbot connects with `cyberbot_app`, so your root password is never stored in the code. The script is safe to run again, because nothing is created twice and existing tasks are kept.
  
 ### 2. Run the chatbot
@@ -50,6 +51,7 @@ The chatbot connects with `cyberbot_app`, so your root password is never stored 
 ```
 2. Open `CybersecurityAwarenessBot.Part3.sln` in Visual Studio 2022.
 3. Press **Ctrl+F5** to build and run.
+
 If MySQL isn't running or the script hasn't been run, the chatbot still opens. The Tasks tab and the chat explain what to do instead of the program crashing.
  
 
@@ -87,6 +89,7 @@ Ask about any of these topics: password safety, phishing, safe browsing, public 
 - Click **Complete** to mark a task as done, or **Delete** to remove it (you're asked to confirm first).
 - Tasks with a reminder due today or earlier show **Due now** in red, and the heading shows how many are due.
 - Tasks added in the chat appear here straight away, and everything is saved in MySQL, so your tasks are still there the next time you open the program.
+- Click **Refresh** to reload the list from MySQL, for example after starting the MySQL service while the program is open.
 
 ### Quiz
  
@@ -178,6 +181,9 @@ CybersecurityAwarenessBot.Part3/
  
 ### Tasks tab
 ![Tasks tab with task cards](CybersecurityAwarenessBot.Part3/Pictures/Part3_TasksTab.png)
+
+### Tasks saved in MySQL
+![The tasks table in MySQL Workbench](CybersecurityAwarenessBot.Part3/Pictures/Part3_MySQL.png)
  
 ### Quiz
 ![Quiz question with feedback](CybersecurityAwarenessBot.Part3/Pictures/Part3_QuizQuestion.png)

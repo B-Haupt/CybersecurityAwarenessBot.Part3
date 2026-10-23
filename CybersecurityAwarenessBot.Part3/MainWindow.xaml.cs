@@ -460,6 +460,26 @@ namespace CybersecurityAwarenessBot.Part3
         }
 
         /// <summary>
+        /// Reloads the task list from MySQL, e.g. after starting the MySQL service while the program was already open.
+        /// </summary>
+        /// <param name="sender">The button raising the event.</param>
+        /// <param name="e">Event data</param>
+        private async void RefreshTasksButton_Click(object sender, RoutedEventArgs e)
+        {
+            await LoadTasksAsync();
+
+            // LoadTasksAsync clears the list and explains the problem if the database can't be reached
+            if (TaskList.ItemsSource != null)
+            {
+                ShowTaskMessage("Task list refreshed from MySQL.", isError: false);
+            }
+            else
+            {
+                ShowTaskMessage("The tasks couldn't be refreshed. See the message below.", isError: true);
+            }
+        }
+
+        /// <summary>
         /// Marks the clicked task as completed.
         /// </summary>
         /// <param name="sender">The task's Complete button, whose Tag holds the TaskItem.</param>
