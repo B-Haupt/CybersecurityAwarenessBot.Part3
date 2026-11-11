@@ -18,7 +18,7 @@ Part 3 builds on the finished Part 2 chatbot ([github.com/B-Haupt/CybersecurityA
 
 ## Video Presentation
 
-YouTube link: 
+YouTube link: https://youtu.be/eUtiC22G1_0
 
 ## Requirements
 
@@ -211,4 +211,5 @@ A GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every push
 | v3.0 | Part 3 foundation: project set up from the final Part 2 code, expanded keyword recognition and small talk, greeting played without freezing the window, and the tabbed layout (Chat, Tasks, Quiz, Activity Log) |
 | v3.1 | Activity log (in the chat and its own tab, 10 at a time with "show more") and the 15-question quiz with feedback, score tracking and final results |
 | v3.2 | Task assistant saved in MySQL, NLP task and reminder commands in the chat, quiz and task commands from the chat, and due reminders at startup |
-| v3.3 | Final README with setup instructions, usage examples, screenshots and the video link |
+| v3.3 | README with MySQL setup steps, detailed usage instructions, examples for every feature, screenshots and the release history |
+| v3.4 | Final POE submission: more NLP phrasings, chat actions recorded in the activity log, Refresh button in the Tasks tab, a MySQL Workbench screenshot and the video link |
