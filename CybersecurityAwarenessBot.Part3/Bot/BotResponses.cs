@@ -78,7 +78,7 @@ namespace CybersecurityAwarenessBot.Bot
                 "Research unfamiliar companies, offers, or investment opportunities independently before making payments or providing personal information."
             },
             ["link"] = new List<string> {
-                "Do not follow any links in emails to reach Internet banking websites. Malicious software could redirect the link to a fake site.",
+                 "Never log in to online banking through a link in an email. Type your bank's address yourself, because the link could take you to a fake site.",
                 "Place your mouse cursor over a link on a computer, or long-press it on a mobile device, to preview the actual URL.",
                 "Navigate to sensitive portals, banks, or payment sites by typing the official URL directly into your browser.",
                 "Check the domain name carefully for misspellings or unusual characters that could indicate a fake website.",
@@ -92,8 +92,8 @@ namespace CybersecurityAwarenessBot.Bot
                 "Only install apps from trusted sources and check the developer, reviews, and requested permissions before installing."
              },
             ["privacy"] = new List<string> {
-                "Every social network is a treasure trove for scammers, who gather users private data. They can use this information for fraudulent activities. So it's a good idea to do a check-up on the security settings of your Facebook account, as well as for every other social network you use.",
-                "Be very careful when you post any scans and photos online, especially when it comes to IDs, tickets and billing documents. It's also a bad idea to share information about your whereabouts and traveling schedule online.",
+                "Scammers collect personal details from social media profiles, so check the privacy and security settings on each of your accounts regularly.",
+                "Never post photos of your ID, tickets or bills online, and avoid sharing where you are or your travel plans in public posts.",
                 "Review your social media privacy settings regularly and limit who can view your personal information and posts.",
                 "Clear cookies and browsing data regularly, and review cookie settings to limit websites from tracking your online activity.",
                 "Only provide personal information when it is necessary, and avoid sharing sensitive details such as your home address or identity number online."

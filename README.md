@@ -1,5 +1,5 @@
 ﻿# Cybersecurity Awareness Bot - Part 3 (POE)
-
+ 
 This is a C# WPF application built for my POE assignment for Programming 2A. It is a chatbot that helps users stay safe online by sharing cybersecurity tips, keeping track of cybersecurity tasks and reminders, testing their knowledge with a quiz, and keeping a log of everything it has done.
  
 Part 3 builds on the finished Part 2 chatbot ([github.com/B-Haupt/CybersecurityAwarenessBot.Part2](https://github.com/B-Haupt/CybersecurityAwarenessBot.Part2)). Everything from Parts 1 and 2 still works: the voice greeting, the ASCII art, the personalised chat, keyword recognition, random tips, memory, sentiment detection and follow-up questions. Part 3 adds four new features, all inside the same window:
@@ -8,25 +8,21 @@ Part 3 builds on the finished Part 2 chatbot ([github.com/B-Haupt/CybersecurityA
 2. **Cybersecurity quiz** with 15 questions
 3. **NLP simulation**, so tasks, reminders and the quiz can be requested in everyday language from the chat
 4. **Activity log** that records the chatbot's actions and can be viewed in the chat or in its own tab
-
-
 ## Student
-
+ 
 - **Name:** Brittany Haupt
 - **Student number:** ST10500773
 - **Module:** PROG6221 Programming 2A
-
 ## Video Presentation
-
+ 
 YouTube link: https://youtu.be/eUtiC22G1_0
-
+ 
 ## Requirements
-
+ 
 - Can only be run on Windows, because `System.Media.SoundPlayer` only works on Windows.
 - Visual Studio 2022 with the .NET desktop development workload, or the .NET 8 SDK.
 - MySQL Server 8.x and MySQL Workbench (installed together with the MySQL Installer from dev.mysql.com/downloads/installer). The project was tested with MySQL 8.4.
 - An internet connection the first time you build, so Visual Studio can download the MySqlConnector NuGet package. This happens automatically.
-
 ## Setup
  
 ### 1. Set up the database (once)
@@ -41,7 +37,7 @@ The script creates:
 - the `tasks` table (id, title, description, reminder date, completed flag and the date it was created)
 - a login called `cyberbot_app` that can only read and change rows in this one database
 
-The chatbot connects with `cyberbot_app`, so your root password is never stored in the code. The script is safe to run again, because nothing is created twice and existing tasks are kept.
+The chatbot connects with `cyberbot_app`, so your root password is never stored in the code. Giving the program its own login with only the privileges it needs follows the approach in the MySQL manual (Oracle, n.d.a; n.d.b). The script is safe to run again, because nothing is created twice and existing tasks are kept.
  
 ### 2. Run the chatbot
  
@@ -54,14 +50,13 @@ The chatbot connects with `cyberbot_app`, so your root password is never stored 
 
 If MySQL isn't running or the script hasn't been run, the chatbot still opens. The Tasks tab and the chat explain what to do instead of the program crashing.
  
-
+ 
 ## How to Use
-
-
+ 
 When the program starts, it plays the voice greeting and shows the ASCII art logo, then asks for your name. If any of your reminders are due today or overdue, the chatbot lists them straight after welcoming you.
  
 The window has four tabs: **Chat**, **Tasks**, **Quiz** and **Activity Log**.
-
+ 
 ### Chat
  
 Ask about any of these topics: password safety, phishing, safe browsing, public Wi-Fi, privacy, online scams, links in emails and app permissions. You can also say:
@@ -90,7 +85,6 @@ Ask about any of these topics: password safety, phishing, safe browsing, public 
 - Tasks with a reminder due today or earlier show **Due now** in red, and the heading shows how many are due.
 - Tasks added in the chat appear here straight away, and everything is saved in MySQL, so your tasks are still there the next time you open the program.
 - Click **Refresh** to reload the list from MySQL, for example after starting the MySQL service while the program is open.
-
 ### Quiz
  
 - Click **Start quiz**, or say "start the quiz" in the chat.
@@ -102,32 +96,30 @@ Ask about any of these topics: password safety, phishing, safe browsing, public 
 - Records every significant action: topics recognised, favourite topics remembered, tasks added, reminders set, tasks completed or deleted, quizzes started, restarted and completed.
 - Shows 10 entries at a time, newest first, with a **Show more** button for older entries.
 - The same log can be viewed in the chat by typing "show activity log".
-
 ## Features of the Project
  
 ### From Parts 1 and 2
  
 - **Graphical interface**: a WPF window with a coloured ASCII art header, rounded chat bubbles (the user's on the right, the chatbot's on the left), and a consistent dark colour theme set up in `App.xaml`.
-- **Voice greeting**: a recorded WAV greeting plays on a background thread with `Task.Run`, so the window stays responsive while it plays.
+- **Voice greeting**: a recorded WAV greeting plays on a background thread with `Task.Run`, so the window stays responsive while it plays (Microsoft, n.d.b).
 - **Personalised conversation**: the chatbot asks for your name, understands answers like "my name is Brittany", and uses your name throughout.
+- **Cybersecurity content**: the tips and quiz questions are written in my own words, based on guidance from the Cybersecurity and Infrastructure Security Agency (CISA, n.d.a; n.d.b; n.d.c), the Federal Trade Commission (FTC, n.d.a; n.d.b) and Google (n.d.).
 - **Keyword recognition**: eight cybersecurity topics, plus alternative words such as "2FA", "scammed" and "hotspot", matched as whole words.
 - **Random responses**: each topic holds several tips, and every tip is shown before any is repeated.
 - **Memory and recall**: the chatbot remembers your favourite topic and refers back to it at sensible intervals.
 - **Sentiment detection**: worried, frustrated and curious users get a supportive message. Each sentiment's reply is stored as a delegate.
 - **Conversation flow**: follow-up questions continue the current topic, and "I don't understand" explains it another way.
 - **Input validation**: blank input, unknown questions and database problems are all handled with helpful messages instead of crashes.
-
 ### New in Part 3
  
-- **Task assistant with a MySQL database**: tasks are created, read, marked as completed and deleted (full CRUD) through `TaskRepository`. Every query uses parameters, so text the user types can never be run as SQL. Titles and descriptions are checked against the column sizes, and reminder dates can't be in the past.
+- **Task assistant with a MySQL database**: tasks are created, read, marked as completed and deleted (full CRUD) through `TaskRepository`. The program connects to MySQL with the MySqlConnector library (MySqlConnector, n.d.b), and every query uses parameters, so text the user types can never be run as SQL (MySqlConnector, n.d.a). Titles and descriptions are checked against the column sizes, and reminder dates can't be in the past.
 - **Reminders**: reminders can be set from the date picker or from everyday phrases in the chat. Due and overdue reminders are shown when you start chatting, highlighted in the Tasks tab, and listed by "show my tasks".
 - **Friendly database errors**: MySQL error codes are turned into plain instructions, for example "Please check that the MySQL service is running" or "Please run Database/schema.sql".
-- **NLP simulation**: `TaskCommandRecogniser` uses regular expressions to recognise the many ways people ask for tasks and reminders ("Add task - ...", "Can you remind me to...", "Set a reminder for Friday to..."), and works out timeframes such as "tomorrow", "in 3 days", "in two weeks", "next Friday" and "20 October". The chatbot also recognises requests to show tasks or start the quiz, and explains how to use these features when you mention "task" or "quiz" without a clear request, which keeps "I didn't quite understand" to a minimum.
+- **NLP simulation**: regular expressions are one of the basic natural language processing techniques for finding patterns in text (Jurafsky and Martin, 2025). `TaskCommandRecogniser` uses .NET regular expressions, including named groups and lookaheads (Microsoft, n.d.a; n.d.c; n.d.d), to recognise the many ways people ask for tasks and reminders ("Add task - ...", "Can you remind me to...", "Set a reminder for Friday to..."), and works out timeframes such as "tomorrow", "in 3 days", "in two weeks", "next Friday" and "20 October". The chatbot also recognises requests to show tasks or start the quiz, and explains how to use these features when you mention "task" or "quiz" without a clear request, which keeps "I didn't quite understand" to a minimum.
 - **Follow-up questions for reminders**: after adding a task without a date, the chatbot asks "Would you like to set a reminder?" and understands answers such as "yes, in 3 days", "next week" or "no thanks".
 - **Cybersecurity quiz**: 15 questions stored in a list, shuffled each game, with coloured feedback, an explanation after every answer, score tracking and final feedback.
 - **Activity log**: one shared log that the chatbot, quiz and task assistant all write to, shown 10 entries at a time with "show more", in both the chat and its own tab.
 - **Features work together**: the chatbot, the Tasks tab, the quiz and the activity log share the same objects, so a task added in the chat appears in the Tasks tab immediately and every action appears in the log. Events (`TasksChanged`, `QuizRequested`, `EntryAdded`) keep the window up to date without the logic classes containing any interface code.
-
 ## Project Structure
  
 ```
@@ -181,7 +173,7 @@ CybersecurityAwarenessBot.Part3/
  
 ### Tasks tab
 ![Tasks tab with task cards](CybersecurityAwarenessBot.Part3/Pictures/Part3_TasksTab.png)
-
+ 
 ### Tasks saved in MySQL
 ![The tasks table in MySQL Workbench](CybersecurityAwarenessBot.Part3/Pictures/Part3_MySQL.png)
  
@@ -205,7 +197,7 @@ A GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every push
 ![Successful CI workflow runs](CybersecurityAwarenessBot.Part3/Pictures/CIWorkflow.png)
  
 ## Releases
-
+ 
 | Version | What it added |
 |---------|---------------|
 | v3.0 | Part 3 foundation: project set up from the final Part 2 code, expanded keyword recognition and small talk, greeting played without freezing the window, and the tabbed layout (Chat, Tasks, Quiz, Activity Log) |
@@ -213,3 +205,36 @@ A GitHub Actions workflow (`.github/workflows/dotnet-ci.yml`) runs on every push
 | v3.2 | Task assistant saved in MySQL, NLP task and reminder commands in the chat, quiz and task commands from the chat, and due reminders at startup |
 | v3.3 | README with MySQL setup steps, detailed usage instructions, examples for every feature, screenshots and the release history |
 | v3.4 | Final POE submission: more NLP phrasings, chat actions recorded in the activity log, Refresh button in the Tasks tab, a MySQL Workbench screenshot and the video link |
+ 
+## References
+ 
+Cybersecurity and Infrastructure Security Agency (CISA). n.d.a. *Recognize and report phishing*. [Online]. Available at: https://www.cisa.gov/secure-our-world/recognize-and-report-phishing [Accessed 12 November 2026].
+ 
+Cybersecurity and Infrastructure Security Agency (CISA). n.d.b. *Turn on MFA*. [Online]. Available at: https://www.cisa.gov/secure-our-world/turn-mfa [Accessed 12 November 2026].
+ 
+Cybersecurity and Infrastructure Security Agency (CISA). n.d.c. *Use strong passwords*. [Online]. Available at: https://www.cisa.gov/secure-our-world/use-strong-passwords [Accessed 12 November 2026].
+ 
+Federal Trade Commission (FTC). n.d.a. *Are public Wi-Fi networks safe? What you need to know*. [Online]. Available at: https://consumer.ftc.gov/articles/are-public-wi-fi-networks-safe-what-you-need-know [Accessed 12 November 2026].
+ 
+Federal Trade Commission (FTC). n.d.b. *How to recognize and avoid phishing scams*. [Online]. Available at: https://consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams [Accessed 12 November 2026].
+ 
+Google. n.d. *Change app permissions on your Android phone*. [Online]. Available at: https://support.google.com/android/answer/9431959 [Accessed 12 November 2026].
+ 
+Jurafsky, D. and Martin, J.H. 2025. *Speech and language processing*. 3rd ed. draft. [Online]. Available at: https://web.stanford.edu/~jurafsky/slp3/ [Accessed 12 November 2026].
+ 
+Microsoft. n.d.a. *.NET regular expressions*. [Online]. Available at: https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expressions [Accessed 12 November 2026].
+ 
+Microsoft. n.d.b. *Asynchronous programming scenarios*. [Online]. Available at: https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/async-scenarios [Accessed 12 November 2026].
+ 
+Microsoft. n.d.c. *Grouping constructs in regular expressions*. [Online]. Available at: https://learn.microsoft.com/en-us/dotnet/standard/base-types/grouping-constructs-in-regular-expressions [Accessed 12 November 2026].
+ 
+Microsoft. n.d.d. *Regular expression language - quick reference*. [Online]. Available at: https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference [Accessed 12 November 2026].
+ 
+MySqlConnector. n.d.a. *Basic API*. [Online]. Available at: https://mysqlconnector.net/tutorials/basic-api/ [Accessed 12 November 2026].
+ 
+MySqlConnector. n.d.b. *MySqlConnector: high performance .NET MySQL driver*. [Online]. Available at: https://mysqlconnector.net/ [Accessed 12 November 2026].
+ 
+Oracle. n.d.a. *MySQL 8.4 reference manual: CREATE USER statement*. [Online]. Available at: https://dev.mysql.com/doc/refman/8.4/en/create-user.html [Accessed 12 November 2026].
+ 
+Oracle. n.d.b. *MySQL 8.4 reference manual: GRANT statement*. [Online]. Available at: https://dev.mysql.com/doc/refman/8.4/en/grant.html [Accessed 12 November 2026].
+ 
